@@ -20,7 +20,7 @@
 
 【机制相关】【需新证据】几何贴合但物体滑落，优先定位接触与控制问题。按 phase 记录 reference error、object motion、接触失败、base-only 成功与 residual 饱和，检查 reference/base/feasible reset，而不是立即替换 actor；若早期失败导致后续 phase 几乎无采样，再单独评估 phase resets/curriculum，并始终用固定部署初始状态报告 end-to-end success，见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
 
-【需新证据】动作表示不足只能在数据与更新口径一致后提出。观察相同条件下的成功动作是否存在多种模式、imitation 的闭环恢复是否失败，以及 Gaussian baseline 的问题是否仍存在；多模态数据本身不能证明 diffusion 会提高 task success。若主要耗时在 simulator 而非 actor/update，先测吞吐分段而不是换生成模型；实验拆分见 [05](05-ppo-enhancement.md)。
+【需新证据】只有在数据与更新口径一致之后，才能把动作表示不足作为候选解释提出。观察相同条件下的成功动作是否存在多种模式、imitation 的闭环恢复是否失败，以及 Gaussian baseline 的问题是否仍存在；多模态数据本身不能证明 diffusion 会提高 task success。若主要耗时在 simulator 而非 actor/update，先测吞吐分段而不是换生成模型；实验拆分见 [05](05-ppo-enhancement.md)。
 
 ## 候选选择：五个方法族
 

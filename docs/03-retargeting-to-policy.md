@@ -40,7 +40,7 @@ human motion + object/scene observation
 
 【机制相关】【推测】residual policy 可以补偿 base controller 未建模的部分，但无法保证任意 reference 都可救回。[residual-rl-2018](bibliography.md#residual-rl-2018) 直接验证传统控制与 RL signal superposition 的真机 block assembly；对灵巧手，应单独检查 residual authority、饱和率、基线失稳和 reference 可行区域，不能把所有失败归为探索不足。
 
-【需新证据】【推测】面向 REGRIND 的插入点是适配假设，不是代码审计结果。以任务记录提供的 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练为背景，可在 reference 导出后检查运动学和接触一致性，在 controller 前定义固定 residual mapping，在 rollout 中保存 policy 原始随机动作；这些约定未通过读取 REGRIND 源码或实验验证，生成式 actor 的具体概率约定见 [04](04-onpolicy-diffusion-interface.md#固定执行-mapping)。
+【需新证据】【推测】面向 REGRIND 的插入点是适配假设，不是代码审计结果。以 REGRIND 项目的 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练为背景，可在 reference 导出后检查运动学和接触一致性，在 controller 前定义固定 residual mapping，在 rollout 中保存 policy 原始随机动作；这些约定未通过读取 REGRIND 源码或实验验证，生成式 actor 的具体概率约定见 [04](04-onpolicy-diffusion-interface.md#固定执行-mapping)。
 
 ## 遥操作与数据管线
 

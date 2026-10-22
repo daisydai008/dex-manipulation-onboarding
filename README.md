@@ -4,7 +4,7 @@
 
 ## Diffusion 与 on-policy RL 阅读路径
 
-这条路径用 6 篇论文对齐任务、数据、更新与概率对象；各步的问题不等于对应论文已经解决所有灵巧操作设置。
+这条路径用 6 篇论文对齐任务、数据、更新与概率对象；各步标注的切入点不代表该论文已解决所有灵巧操作设置。
 
 1. [openai-inhand-2020](docs/bibliography.md#openai-inhand-2020)：明确 in-hand reorientation 与真机迁移的任务边界；对应 [01 任务谱系](docs/01-problem-structure.md#任务谱系)。
 2. [dextreme-2022](docs/bibliography.md#dextreme-2022)：区分 vision policy 与 privileged state 的证据；对应 [01 观测维度](docs/01-problem-structure.md#观测与部分可观测性)。

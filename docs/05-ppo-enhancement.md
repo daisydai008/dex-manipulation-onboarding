@@ -2,7 +2,7 @@
 
 PPO 增强应按修改位置分成 update/estimation、demonstration/residual 集成、并行训练与课程三层，而不是把新 actor、数据来源和环境吞吐混为一种算法进步。[ppo-2017](bibliography.md#ppo-2017)、[implementation-matters-2020](bibliography.md#implementation-matters-2020) 与 [on-policy-actor-critic-2020](bibliography.md#on-policy-actor-critic-2020) 的 abstract 分别支持多 epoch surrogate update、code-level optimization 的影响和系统化设计选择评估。
 
-本章的所有 REGRIND 插入点都是适配假设，不是源码审计或训练结果。工单给出的 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练只是接口背景；每个方向均列 baseline 问题、数据/信号、改动接口、证据层级与隔离评估，并用【推测】标注超出 abstract 的实现建议。
+本章的所有 REGRIND 插入点都是适配假设，不是源码审计或训练结果。REGRIND 项目的 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练只是接口背景；每个方向均列 baseline 问题、数据/信号、改动接口、证据层级与隔离评估，并用【推测】标注超出 abstract 的实现建议。
 
 ## 从失败信号选择接口
 

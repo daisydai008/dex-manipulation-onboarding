@@ -8,9 +8,9 @@ In-hand reorientation 关注已建立接触后的物体姿态控制，并不自�
 
 Grasp acquisition 与后续 manipulation 应分别计量。[dexdiffuser-2023](bibliography.md#dexdiffuser-2023) 从 partial point cloud 生成、评估和 refine grasps，其验证对象是 grasp success；【机制相关】【推测】regrasp 可以作为重定向失败后的恢复过程，但 grasp generation 本身不能证明可连续完成该过程，regrasp 的状态切换与恢复成功率【需新证据】。
 
-Arm-hand 协同需要同时处理到达、姿态和手部接触，而非把 hand-only policy 的维度增加即可。[dexpilot-2020](bibliography.md#dexpilot-2020) 与 [anyteleop-2023](bibliography.md#anyteleop-2023) 的证据属于 teleoperation，[demostart-2024](bibliography.md#demostart-2024) 则包含三指手臂-手的 learned policy；它们的相机、动作接口和示范使用方式不同。
+Arm-hand 协同需要同时处理到达、姿态和手部接触，而不是只把 hand-only policy 的维度加宽。[dexpilot-2020](bibliography.md#dexpilot-2020) 与 [anyteleop-2023](bibliography.md#anyteleop-2023) 的证据属于 teleoperation，[demostart-2024](bibliography.md#demostart-2024) 则包含三指手臂-手的 learned policy；它们的相机、动作接口和示范使用方式不同。
 
-双手协同同时包含控制耦合和任务角色分配。[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 对 single-agent 与 multi-agent 设置作比较，[bunny-visionpro-2024](bibliography.md#bunny-visionpro-2024) 和 [dexmimicgen-2024](bibliography.md#dexmimicgen-2024) 则处理数据采集与合成；【机制相关】【推测】是否拆成多个 agent 应由 observation/action partition 决定，不由“两只手”这个名称决定。
+双手协同既包含控制耦合，也包含任务角色分配。[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 对 single-agent 与 multi-agent 设置作比较，[bunny-visionpro-2024](bibliography.md#bunny-visionpro-2024) 和 [dexmimicgen-2024](bibliography.md#dexmimicgen-2024) 则处理数据采集与合成；【机制相关】【推测】是否拆成多个 agent 应由 observation/action partition 决定，不由“两只手”这个名称决定。
 
 Long-horizon 组合的困难包括子任务之间的可达性和失败恢复。[sequential-dexterity-2023](bibliography.md#sequential-dexterity-2023) 以 transition feasibility 和 policy switching 处理衔接；[openai-rubiks-2019](bibliography.md#openai-rubiks-2019) 报告复杂序列的真机迁移；两者不能被压缩成一次短时重定向的 success rate。
 
@@ -38,4 +38,4 @@ IsaacLab 任务族提供可复用仿真接口，但名字相近不保证 benchma
 
 【需新证据】【推测】跨论文比较前应逐项填写 hand-only/arm-hand、动作语义、初始状态、物体泛化与 sim/real 五类条件。动作是 position target、delta target、velocity 还是 torque；物体是否已在手中；测试是新初姿、新实例还是新形状；指标是在仿真、zero-shot 真机还是在线真机训练取得，任何一项未报告都应保留空缺而非按常见配置补全。
 
-下一步应先选择数据与策略的组合路径，再选择 actor 参数化；对应 [方法全景](02-method-landscape.md) 与 [retargeting 到 policy](03-retargeting-to-policy.md)。
+下一步应先选择数据与策略的组合路径，再选择 actor 参数化；对应 [02 方法选择](02-method-landscape.md) 与 [03 retargeting 到 policy](03-retargeting-to-policy.md)。
