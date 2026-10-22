@@ -1,12 +1,12 @@
 # 01 问题结构
 
-Dexterous manipulation 需要先按任务、观测与执行接口分解，不能只按手的自由度或算法名称比较。本文用 [注释书目](bibliography.md) 的限定证据说明差异；未由所据 abstract 或指定全文给出的配置记为“未报告”。
+Dexterous manipulation 需要先按任务、观测与执行接口分解，不能只按手的自由度或算法名称比较。本文用 [注释书目](bibliography.md) 中已限定来源的证据说明差异；未由所据 abstract 或指定全文给出的配置记为“未报告”。
 
 ## 任务谱系
 
 In-hand reorientation 关注已建立接触后的物体姿态控制，并不自动包含从桌面拿起物体的能力。[openai-inhand-2020](bibliography.md#openai-inhand-2020)、[dextreme-2022](bibliography.md#dextreme-2022) 与 [visual-dexterity-2022](bibliography.md#visual-dexterity-2022) 覆盖仿真训练到真机重定向；它们支持讨论 finger gaiting、物体观测与形状泛化，但各自初始接触分布在 abstract 中未报告，不能默认相同。
 
-Grasp acquisition 与后续 manipulation 应分别计量。[dexdiffuser-2023](bibliography.md#dexdiffuser-2023) 从 partial point cloud 生成、评估和 refine grasps，其验证对象是 grasp success；【机制相关】【推测】regrasp 可以作为重定向失败后的恢复过程，但 grasp generation 本身不能证明可连续完成该过程，regrasp 的状态切换与恢复成功率【需新证据】。
+Grasp acquisition 与后续 manipulation 应分别计量。[dexdiffuser-2023](bibliography.md#dexdiffuser-2023) 从 partial point cloud 生成、评估和 refine grasps，其验证对象是 grasp success；【机制相关】【推测】regrasp 可以作为重定向失败后的恢复过程，但 grasp generation 的证据不能推出该过程可连续完成；状态切换与恢复成功率【需新证据】。
 
 Arm-hand 协同需要同时处理到达、姿态和手部接触，而不是只把 hand-only policy 的维度加宽。[dexpilot-2020](bibliography.md#dexpilot-2020) 与 [anyteleop-2023](bibliography.md#anyteleop-2023) 的证据属于 teleoperation，[demostart-2024](bibliography.md#demostart-2024) 则包含三指手臂-手的 learned policy；它们的相机、动作接口和示范使用方式不同。
 

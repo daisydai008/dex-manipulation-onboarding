@@ -16,7 +16,7 @@
 
 ## 瓶颈诊断：由可观察信号驱动
 
-【机制相关】【需新证据】update 异常先排查概率与估计接口。若 KL/clip fraction 在更新后突变，检查同一 action 的 old/new log-prob、advantage、normalization 与 done/truncation；这些一致后才分别改变 LR、epoch 或 clip，不能先归因于探索不够。[implementation-matters-2020](bibliography.md#implementation-matters-2020) 支持实现归因的重要性，具体排查顺序是 [05 selector](05-ppo-enhancement.md#从失败信号选择接口) 的候选设计。
+【机制相关】【需新证据】update 异常先排查概率与估计接口。若 KL/clip fraction 在更新后突变，检查同一 action 的 old/new log-prob、advantage、normalization 与 done/truncation；这些确认一致后才分别改变 LR、epoch 或 clip，不能先归因于探索不够。[implementation-matters-2020](bibliography.md#implementation-matters-2020) 支持实现归因的重要性，具体排查顺序是 [05 selector](05-ppo-enhancement.md#从失败信号选择接口) 的候选设计。
 
 【机制相关】【需新证据】几何贴合但物体滑落，优先定位接触与控制问题。按 phase 记录 reference error、object motion、接触失败、base-only 成功与 residual 饱和，检查 reference/base/feasible reset，而不是立即替换 actor；若早期失败导致后续 phase 几乎无采样，再单独评估 phase resets/curriculum，并始终用固定部署初始状态报告 end-to-end success，见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
 

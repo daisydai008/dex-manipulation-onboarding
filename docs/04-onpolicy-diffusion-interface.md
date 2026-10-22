@@ -4,7 +4,7 @@
 
 ## 概率对象
 
-【条件推导】可计算密度需要显式成立的变换条件。给定固定 conditioning `c`，设基础变量 `z∈R^d` 有相对 Lebesgue measure 的已知密度 `p₀(z|c)`，辅助动作 `ξ=Fθ(z;c)∈R^d`；本推导要求 `Fθ` 在支持集内部是 C¹ diffeomorphism（一一可逆、正逆映射连续可微、Jacobian 非奇异，忽略零测边界），且逆映射和 log-determinant 可计算，才使用 change-of-variables 得到下式。一般 stochastic、多对一或维度改变的 diffusion sampler 不自动满足这些条件。
+【条件推导】可求值的密度要求变换条件显式成立。给定固定 conditioning `c`，设基础变量 `z∈R^d` 有相对 Lebesgue measure 的已知密度 `p₀(z|c)`，辅助动作 `ξ=Fθ(z;c)∈R^d`；本推导要求 `Fθ` 在支持集内部是 C¹ diffeomorphism（一一可逆、正逆映射连续可微、Jacobian 非奇异，忽略零测边界），且逆映射和 log-determinant 可计算，才使用 change-of-variables 得到下式。一般 stochastic、多对一或维度改变的 diffusion sampler 不自动满足这些条件。
 
 ```text
 z = Fθ⁻¹(ξ;c)
