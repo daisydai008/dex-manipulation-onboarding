@@ -76,7 +76,7 @@ OFFICIAL_ANCHORS = {
     "classic": ("Isaac-Ant-v0",),
 }
 FetchResult = namedtuple("FetchResult", "body final_url status")
-FIELDS = ("paper-id", "title", "authors-year", "arxiv", "tier", "evidence",
+FIELDS = ("paper-id", "title", "authors-year", "arxiv", "tier", "evidence", "主源",
           "解决什么问题", "方法与信号是什么", "验证到哪里及缺口", "对两类读者有什么用")
 ARXIV = re.compile(r"\d{4}\.\d{4,5}v[1-9]\d*")
 QUESTIONS = FIELDS[-4:]
@@ -196,6 +196,15 @@ def parse_entries(text):
             errors.append(f"{pid}: paper-id 与 heading anchor 不符")
         if not ARXIV.fullmatch(entry.get("arxiv", "")):
             errors.append(f"{pid}: arxiv 必须含合法 canonical ID 与 vN")
+        sources = links(entry.get("主源", ""))
+        if not sources:
+            errors.append(f"{pid}: 主源必须包含绑定所据 arxiv ID/version 的链接")
+        for source in sources:
+            parsed = urllib.parse.urlsplit(source)
+            if (parsed.scheme not in ("http", "https") or parsed.netloc != "arxiv.org"
+                    or parsed.path not in ("/abs/" + entry.get("arxiv", ""),
+                                           "/html/" + entry.get("arxiv", "")) or parsed.query):
+                errors.append(f"{pid}: 主源链接与所据 arxiv ID/version 不符: {source}")
         if entry.get("tier") not in ("core", "extended"):
             errors.append(f"{pid}: tier 无效")
         coverage = entry.get("验证到哪里及缺口", "")
@@ -279,9 +288,21 @@ class Page(HTMLParser):
         self.title_count = 0
         self.in_title = False
         self.text_parts = []
+        self.elements = []
+        self.fragments = {}
+        self.headings = []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        element = {"tag": tag, "start": len(self.text_parts),
+                   "heading_start": len(self.headings), "heading_end": None}
+        if re.fullmatch(r"h[1-6]", tag):
+            self.headings.append((len(self.text_parts), int(tag[1])))
+        if tag in ("area", "base", "br", "col", "embed", "hr", "img", "input",
+                   "link", "meta", "param", "source", "track", "wbr"):
+            element["heading_end"] = len(self.headings)
+        else:
+            self.elements.append(element)
         if tag == "title":
             self.in_title = True
             self.title_count += 1
@@ -289,10 +310,18 @@ class Page(HTMLParser):
             self.meta[attrs.get("name")] = attrs.get("content", "")
         if "id" in attrs:
             self.ids.add(attrs["id"])
+            self.fragments[attrs["id"]] = element
         if tag == "a" and "name" in attrs:
             self.ids.add(attrs["name"])
+            self.fragments[attrs["name"]] = element
 
     def handle_endtag(self, tag):
+        for i in range(len(self.elements) - 1, -1, -1):
+            if self.elements[i]["tag"] == tag:
+                for element in self.elements[i:]:
+                    element["heading_end"] = len(self.headings)
+                del self.elements[i:]
+                break
         if tag == "title":
             self.in_title = False
 
@@ -300,6 +329,20 @@ class Page(HTMLParser):
         self.text_parts.append(data)
         if self.in_title:
             self.title_parts.append(data)
+
+    def section_text(self, fragment):
+        """从 fragment 元素起，截到下一同级/更高 heading；保留下级内容。"""
+        element = self.fragments[fragment]
+        first = element["heading_start"]
+        last = element["heading_end"]
+        if last is None:
+            last = len(self.headings)
+        # section/div 的首个内含 heading 定级；其他元素沿用前一 heading。
+        heading = first if first < last else first - 1
+        level = self.headings[heading][1] if heading >= 0 else 6
+        end = next((start for start, rank in self.headings[heading + 1:] if rank <= level),
+                   len(self.text_parts))
+        return " ".join(self.text_parts[element["start"]:end])
 
     @property
     def title(self):
@@ -335,7 +378,7 @@ def official_page_issue(url, result):
         return "官方工程文档 page title 不符"
     if fragment not in page.ids:
         return "官方工程文档死 anchor: " + fragment
-    text = " ".join(page.text_parts)
+    text = page.section_text(fragment)
     if any(pid not in text for pid in OFFICIAL_ANCHORS[fragment]):
         return "官方工程文档缺少绑定的 registry ID"
     return None
@@ -575,11 +618,27 @@ def self_test():
         checks += 1
         print("SELF-TEST PASS " + label)
 
+    source = "[arXiv v2](https://arxiv.org/abs/2401.12345v2)"
     good = "## sample-2024\n" + "\n".join("- " + k + "：" + v for k, v in zip(FIELDS, (
-        "sample-2024", "A Test Title", "Doe 等 2024", "2401.12345v2", "core", "v2 abstract",
+        "sample-2024", "A Test Title", "Doe 等 2024", "2401.12345v2", "core", "v2 abstract", source,
         "问题", "方法", "已覆盖证据：已测范围。 不支持的结论：未测迁移。", "用途")))
     entries, errors = parse_entries(good)
     check(not errors, "valid entry")
+    check(bool(parse_entries(good.replace("- 主源：" + source + "\n", ""))[1]), "missing primary source")
+    check(bool(parse_entries(good + "\n- 主源：" + source)[1]), "duplicate primary source")
+    for label, replacement in (
+        ("blank primary source", ""),
+        ("primary source without URL", "arXiv v2"),
+        ("primary source version mismatch", source.replace("12345v2", "12345v3")),
+        ("primary source ID mismatch", source.replace("12345v2", "54321v2")),
+        ("unversioned primary source", source.replace("12345v2", "12345")),
+    ):
+        check(bool(parse_entries(good.replace(source, replacement))[1]), label)
+    sections = "[§3](https://arxiv.org/html/2401.12345v2#S3)、[§4](https://arxiv.org/html/2401.12345v2#S4)"
+    check(not parse_entries(good.replace(source, sections + "、" + source))[1],
+          "multiple HTML sections and abs bind the same version")
+    check(bool(parse_entries(good.replace(source, sections + "、" + source.replace("12345v2", "12345v3")))[1]),
+          "mixed primary source versions rejected")
     check(bool(parse_entries(good.replace("2401.12345v2", "wrong-id"))[1]), "wrong ID")
     check(bool(parse_entries(good.replace("- title：A Test Title", ""))[1]), "missing field")
     check(bool(parse_entries(good + "\n" + good)[1]), "duplicate paper ID and anchor")
@@ -708,6 +767,27 @@ def self_test():
                      '<section id="manipulation">' + " ".join(OFFICIAL_ANCHORS["manipulation"]) + "</section></html>")
     valid = FetchResult(official_body, official_base, 200)
     check(official_page_issue(official_url, valid) is None, "valid fixed-version official page")
+    registry = " ".join(OFFICIAL_ANCHORS["manipulation"])
+    section_prefix = "<html><title>" + html.escape(OFFICIAL_TITLE) + "</title>"
+    for label, section, expected in (
+        ("registry IDs before fragment rejected",
+         "<h2>Other</h2>" + registry + '<h2 id="manipulation">Manipulation</h2><p>Empty</p>', False),
+        ("registry IDs after same-level heading rejected",
+         '<section id="manipulation"><h2>Manipulation</h2><p>Empty</p></section>'
+         "<section><h2>Other</h2>" + registry + "</section>", False),
+        ("registry IDs after higher-level heading rejected",
+         '<h3 id="manipulation">Manipulation</h3><p>Empty</p><h2>Other</h2>' + registry, False),
+        ("fragment heading includes lower-level subsection",
+         '<h2 id="manipulation">Manipulation</h2><h3>Tasks</h3>' + registry + "<h2>Other</h2>", True),
+        ("fragment container includes lower-level subsection",
+         '<section id="manipulation"><h2>Manipulation</h2><h3>Tasks</h3>' + registry + "</section>", True),
+        ("fragment inside heading uses its level",
+         '<h2><span id="manipulation">Manipulation</span></h2><h3>Tasks</h3>' + registry, True),
+        ("fragment inside heading stops at its peer",
+         '<h2><span id="manipulation">Manipulation</span></h2><h2>Other</h2>' + registry, False),
+    ):
+        result = valid._replace(body=section_prefix + section + "</html>")
+        check((official_page_issue(official_url, result) is None) == expected, label)
     for label, result in (
         ("200 wrong official title", valid._replace(body=official_body.replace("Available Environments", "Not Found"))),
         ("wrong official version", valid._replace(final_url=official_base.replace("v2.2.0", "main"))),

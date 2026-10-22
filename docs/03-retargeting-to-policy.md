@@ -44,7 +44,7 @@ human motion + object/scene observation
 
 ## 遥操作与数据管线
 
-【论文直接验证】视觉 teleoperation 关注在线映射，而 mocap pipeline 还需要离线对齐。[dexpilot-2020](bibliography.md#dexpilot-2020) 给出裸手视觉到完整 hand-arm 控制，[anyteleop-2023](bibliography.md#anyteleop-2023) 扩展跨 arm/hand/camera 配置，[dexcap-2024](bibliography.md#dexcap-2024) 则结合便携追踪、3D observation、IK 与 imitation；它们属于数据来源，不是三种轨迹用途中的唯一一种。
+【机制相关】视觉 teleoperation 关注在线映射，而 mocap pipeline 还需要离线对齐。[dexpilot-2020](bibliography.md#dexpilot-2020) 给出裸手视觉到完整 hand-arm 控制，[anyteleop-2023](bibliography.md#anyteleop-2023) 扩展跨 arm/hand/camera 配置，[dexcap-2024](bibliography.md#dexcap-2024) 则结合便携追踪、3D observation、IK 与 imitation；它们属于数据来源，不是三种轨迹用途中的唯一一种。
 
 【论文直接验证】VR 和 haptic feedback 可以改善采集交互，但下游 policy 仍须独立测量。[openteach-2024](bibliography.md#openteach-2024) 报告跨机器人 teleoperation 与 policy learning，[bunny-visionpro-2024](bibliography.md#bunny-visionpro-2024) 报告双手 collision/singularity avoidance、haptic feedback 与 long-horizon imitation；abstract 对各自端到端 action latency 的完整定义未报告。
 
