@@ -168,7 +168,7 @@
 - 解决什么问题：让预训练 Diffusion Policy 能以 policy gradient/PPO 进行 online fine-tuning，而不要求显式计算最终 action chunk 的边缘密度。
 - 方法与信号是什么：把每个 Gaussian denoising transition 视为扩展 MDP 的 policy action，ratio 对象是逐步 denoising likelihood；通常从 demonstrations 预训练，支持 action chunk、部分 denoising-step fine-tuning 与 stochastic DDIM exploration。
 - 验证到哪里及缺口：已覆盖证据：Section 5 覆盖 locomotion、Franka Kitchen、Robomimic、Furniture-Bench 与 zero-shot sim-to-real；Appendix D Table A3 的 Lift 单轮训练为 Gaussian-MLP 27.7 s、DPPO-MLP 35.6 s、DPPO-UNet 83.6 s。 不支持的结论：未验证 dexterous hand；不能将 Section 5 的约 2× 概述当作全局开销上限。
-- 对两类读者有什么用：【论文直接验证】同事 A 应把它作为 GenPO 的核心 on-policy comparator；【机制相关】retargeting 读者可用 demonstration pretraining 加 online fine-tuning 的链条，但灵巧手接触迁移仍需新证据。
+- 对两类读者有什么用：【机制相关】同事 A 应把它作为 GenPO 的核心 on-policy comparator；【机制相关】retargeting 读者可用 demonstration pretraining 加 online fine-tuning 的链条，但灵巧手接触迁移仍需新证据。
 - 主源：[arXiv HTML v3 §3](https://arxiv.org/html/2409.00588v3#S3)、[§4](https://arxiv.org/html/2409.00588v3#S4)、[§5](https://arxiv.org/html/2409.00588v3#S5)、[§6](https://arxiv.org/html/2409.00588v3#S6)、[Appendix D](https://arxiv.org/html/2409.00588v3#A4)
 
 ## genpo-2025
@@ -395,7 +395,7 @@
 ## dexdiffuser-2023
 - paper-id：dexdiffuser-2023
 - title：DexDiffuser: Generating Dexterous Grasps with Diffusion Models
-- authors-year：Weng 等，2023
+- authors-year：Weng 等，2024
 - arxiv：2402.02989v3
 - tier：extended
 - evidence：v3 abstract
