@@ -1,49 +1,51 @@
 # Dexterous manipulation 文献导读
 
-本仓库为 diffusion × on-policy RL 与 retargeting × residual RL 两类研究者提供共享的文献入口。范围是灵巧操作的问题结构、数据到闭环策略的转换、GenPO/DPPO 的概率接口，以及可隔离评估的 PPO 增强方向；不包含训练代码，也不承诺任何方案对 REGRIND 有收益。
+本导读按“已有资源 → 起步路线 → 预期产出”组织研究选择。有 simulator 和 reward、没有示范时，先建立 Gaussian PPO baseline，产出任务指标与失败分布；有成功 robot demonstrations 时，先验证 imitation 闭环，产出数据覆盖与恢复能力记录；有 reference/base controller 时，先检查物理可行性，再比较 base-only 与 Gaussian residual，产出控制分工和 residual 作用范围。这些是【机制相关】【需新证据】的实验建议，不是训练收益承诺，具体选择见 [02 决策支持](docs/02-method-landscape.md)。
+
+## Diffusion 与 on-policy RL 阅读路径
+
+这条路径用 6 篇论文对齐任务、数据、更新与概率对象；各步的问题不等于对应论文已经解决所有灵巧操作设置。
+
+1. [openai-inhand-2020](docs/bibliography.md#openai-inhand-2020)：明确 in-hand reorientation 与真机迁移的任务边界；对应 [01 任务谱系](docs/01-problem-structure.md#任务谱系)。
+2. [dextreme-2022](docs/bibliography.md#dextreme-2022)：区分 vision policy 与 privileged state 的证据；对应 [01 观测维度](docs/01-problem-structure.md#观测与部分可观测性)。
+3. [diffusion-policy-2023](docs/bibliography.md#diffusion-policy-2023)：理解 conditional action generation 的数据前提；对应 [02 diffusion policy 短卡](docs/02-method-landscape.md#diffusion-policy)。
+4. [ppo-2017](docs/bibliography.md#ppo-2017)：明确新旧策略 ratio 必须比较同一随机变量；对应 [04 概率对象](docs/04-onpolicy-diffusion-interface.md#概率对象)。
+5. [dppo-2024](docs/bibliography.md#dppo-2024)：理解 denoising-step PPO 与 demonstration fine-tuning，而不要求最终动作的边缘密度；对应 [04 rollout 记录](docs/04-onpolicy-diffusion-interface.md#rollout-记录)。
+6. [implementation-matters-2020](docs/bibliography.md#implementation-matters-2020)：区分 policy class 收益与实现收益；对应 [05 update/estimation 层](docs/05-ppo-enhancement.md#updateestimation-层)。
+
+## Retargeting 与 residual RL 阅读路径
+
+这条路径用 7 篇论文区分数据、reference、residual 与课程接口，目标是把 motion 转为可评估的闭环策略。
+
+1. [dexcap-2024](docs/bibliography.md#dexcap-2024)：检查 mocap、IK 与 policy-ready 数据之间缺什么；对应 [03 数据管线](docs/03-retargeting-to-policy.md#遥操作与数据管线)。
+2. [dapg-2018](docs/bibliography.md#dapg-2018)：理解 demonstrations 如何帮助 RL，而不是替代环境交互；对应 [03 BC 用途](docs/03-retargeting-to-policy.md#用途一bc-数据)。
+3. [deepmimic-2018](docs/bibliography.md#deepmimic-2018)：区分 tracking reference 与 task objective；对应 [03 tracking 与 RSI](docs/03-retargeting-to-policy.md#用途二tracking-reference-与-rsi)。
+4. [residual-rl-2018](docs/bibliography.md#residual-rl-2018)：划分 base control 与 residual 的职责；对应 [03 动力学鸿沟](docs/03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
+5. [demostart-2024](docs/bibliography.md#demostart-2024)：判断示范是否只用于 reset/curriculum；对应 [03 reward/reset 用途](docs/03-retargeting-to-policy.md#用途三reward-与-reset-信号)。
+6. [sapg-2024](docs/bibliography.md#sapg-2024)：检查增加并行环境为何不等于更有效学习；对应 [05 数据聚合](docs/05-ppo-enhancement.md#split-and-aggregate-数据聚合)。
+7. [ppo-2017](docs/bibliography.md#ppo-2017)：明确增强方案改变哪部分 surrogate update；对应 [05 评估顺序](docs/05-ppo-enhancement.md#评估顺序与停止条件)。
 
 ## 使用与证据约定
 
-文献库收录 37 篇作品，其中 20 篇 core、17 篇 extended；不要求全部先读。逐篇四问注释集中于 [bibliography](docs/bibliography.md)，主题章节只负责跨文献综合，稳定 paper ID 不随标题或年份勘误变化。
+文献库收录 36 篇作品，其中 19 篇 core、17 篇 extended；不要求全部先读。逐篇四问注释集中于 [bibliography](docs/bibliography.md)，主题章节负责跨文献综合，稳定 paper ID 不随标题或年份勘误变化。本仓库不包含训练代码，REGRIND 插入点均为待验证的适配假设。
 
-适配分析使用三级标签，不能把机制可组合性当作已验证收益。【论文直接验证】限定于论文实际任务与指标；【机制相关】表示接口在概念上相关，不表示组合已有实验；【需新证据】表示目标任务、硬件或组合尚待验证。除 GenPO v4 与 DPPO v3 的指定全文之外，其他论文只使用 abstract 和公开元数据；越出该证据范围的陈述另标【推测】。“未报告”始终表示本导读查阅的证据范围未报告，而不是断言整篇论文没有该信息。
+适配建议不等于已有实验结果。【论文直接验证】限定于所引论文实际机制、任务与指标；【机制相关】说明接口相关而非组合已验证；【需新证据】标出目标任务、硬件或组合尚待验证。DPPO v3 的指定全文之外，其他论文仅使用记录版本的 abstract 与公开元数据，越出该范围另标【推测】；“未报告”仅指本导读查阅的证据范围未报告。
 
-## 同事 A 路径
-
-这条路径以 diffusion × on-policy RL 为主线，用 6 篇论文完成任务、数据与概率接口的最小对齐。
-
-1. [openai-inhand-2020](docs/bibliography.md#openai-inhand-2020)：要解决的问题是 in-hand reorientation 与真机迁移需要什么；对应 [问题结构](docs/01-problem-structure.md#任务谱系)。
-2. [dextreme-2022](docs/bibliography.md#dextreme-2022)：要解决的问题是 vision policy 与 privileged state 的证据如何区分；对应 [观测维度](docs/01-problem-structure.md#观测与部分可观测性)。
-3. [diffusion-policy-2023](docs/bibliography.md#diffusion-policy-2023)：要解决的问题是为什么从单动作分布转向 conditional action generation；对应 [diffusion policy 方法族](docs/02-method-landscape.md#diffusion-policy)。
-4. [dppo-2024](docs/bibliography.md#dppo-2024)：要解决的问题是如何不求最终动作边缘密度而进行 on-policy update；对应 [GenPO 与 DPPO 对照](docs/04-genpo-interface.md#genpo-与-dppo-对照)。
-5. [genpo-2025](docs/bibliography.md#genpo-2025)：要解决的问题是 exact likelihood 属于哪个随机变量；对应 [auxiliary action 接口](docs/04-genpo-interface.md#概率对象与-rollout-约定)。
-6. [implementation-matters-2020](docs/bibliography.md#implementation-matters-2020)：要解决的问题是如何将 policy class 收益与实现收益分开；对应 [update/estimation 层](docs/05-ppo-enhancement.md#updateestimation-层)。
-
-## Retargeting 路径
-
-这条路径以 motion 到 executable policy 为主线，用 7 篇论文区分数据、reference、residual 与课程接口。
-
-1. [dexcap-2024](docs/bibliography.md#dexcap-2024)：要解决的问题是 mocap、IK 与 policy-ready 数据之间缺什么；对应 [数据管线](docs/03-retargeting-to-policy.md#遥操作与数据管线)。
-2. [dapg-2018](docs/bibliography.md#dapg-2018)：要解决的问题是 demonstrations 如何帮助 RL，而不是替代环境交互；对应 [BC 用途](docs/03-retargeting-to-policy.md#用途一bc-数据)。
-3. [deepmimic-2018](docs/bibliography.md#deepmimic-2018)：要解决的问题是 tracking reference 如何与 task objective 共存；对应 [tracking 与 RSI](docs/03-retargeting-to-policy.md#用途二tracking-reference-与-rsi)。
-4. [residual-rl-2018](docs/bibliography.md#residual-rl-2018)：要解决的问题是 base control 与 residual 的职责如何划分；对应 [动力学鸿沟](docs/03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
-5. [demostart-2024](docs/bibliography.md#demostart-2024)：要解决的问题是示范是否可只用于 reset/curriculum；对应 [reward/reset 用途](docs/03-retargeting-to-policy.md#用途三reward-与-reset-信号)。
-6. [sapg-2024](docs/bibliography.md#sapg-2024)：要解决的问题是增加并行环境为何不等于更有效学习；对应 [demonstration/residual 集成层](docs/05-ppo-enhancement.md#demonstrationresidual-集成层)。
-7. [ppo-2017](docs/bibliography.md#ppo-2017)：要解决的问题是增强方案最终改变哪部分 surrogate update；对应 [评估顺序](docs/05-ppo-enhancement.md#评估顺序与停止条件)。
+推导与工程事实另列证据类别。【条件推导】只在列明前提下成立，不代表任意 diffusion sampler 满足条件或已取得收益；【官方工程文档】只支持固定版本的 registry/interface 事实，不支持 actor-gain 结论。完整约定见 [书目证据说明](docs/bibliography.md#证据约定)。
 
 ## 文件导航
 
-- [01 问题结构](docs/01-problem-structure.md)：任务谱系、观测、硬件与 benchmark 的比较边界。
-- [02 方法全景](docs/02-method-landscape.md)：五个交叉方法族及其组合关系。
-- [03 Retargeting 到 policy](docs/03-retargeting-to-policy.md)：轨迹三种用途、接触可行性与数据管线。
-- [04 GenPO 接口](docs/04-genpo-interface.md)：auxiliary likelihood、DPPO 对照、仿真与真机适配边界。
-- [05 PPO 增强](docs/05-ppo-enhancement.md)：三层候选、所需信号、修改接口与隔离评估。
-- [注释书目](docs/bibliography.md)：每篇的身份、版本、证据与四问。
-- [检查器](scripts/check_links.py)：本地结构、条目、相对链接、风格与联网元数据验证；协作边界见 [任务记录](TASK-RECORD.md)。
+- [01 问题结构](docs/01-problem-structure.md)：确定任务、观测与 benchmark 比较边界。
+- [02 方法选择](docs/02-method-landscape.md)：与 README 一起选方向，按资源和可观察失败信号选择五族候选。
+- [03 Retargeting 到 policy](docs/03-retargeting-to-policy.md)：检查轨迹用途、接触可行性与执行数据契约。
+- [04 On-policy diffusion 接口](docs/04-onpolicy-diffusion-interface.md)：定义概率对象、rollout 记录、执行 mapping 与诊断任务协议。
+- [05 PPO 增强](docs/05-ppo-enhancement.md)：从失败信号选择排查项，设计隔离实验。
+- [注释书目](docs/bibliography.md)：维护 36 篇作品的身份、版本、证据与四问。
+- [检查器](scripts/check_links.py)：检查 8 个交付文件的结构、条目、相对链接、机械风格及外部来源。
 
 ## 检查与接受边界
 
-检查器仅依赖 Python 标准库，不写 cache、日志或 fixture。`--lint` 不联网；完整模式核验每条记录版本的 arXiv API title/ID、bibliography 外链与内部 anchor，单请求 15 秒、至多重试 2 次、同 host 间隔至少 1 秒、总联网预算 15 分钟；退出码为 0 全部通过、2 内容失败、3 网络未完成，内容失败优先。
+检查器只用 Python 标准库，不写 cache、日志或 fixture。`--lint` 不联网，按内嵌身份映射要求 36 条、19 core、17 extended、新增 0；完整模式核验记录版本的 arXiv API title/ID、书目外链、全部交付 Markdown 中的官方工程文档链接与内部 anchor。网络请求单次 15 秒、至多重试 2 次、同 host 间隔至少 1 秒、总联网预算 15 分钟；退出码为 0 全部通过、2 内容失败、3 网络未完成，内容失败优先，只有 failed=0 且 unverified=0 才通过。
 
 ```bash
 python3 scripts/check_links.py --self-test
@@ -51,4 +53,4 @@ python3 scripts/check_links.py --lint
 python3 scripts/check_links.py
 ```
 
-自动检查通过不等于内容接受。GenPO/DPPO 机制与选型论断仍需人工对照指定版本，最终接受由 Kimi 的独立核验和只读 review 决定。
+自动检查通过不等于内容接受。条件推导、DPPO 机制与选型建议仍需人工核对；执行者交回与独立内容核验分开，不以链接可达代替技术判断。

@@ -1,6 +1,14 @@
 # 注释书目
 
-本文件是 37 篇入选作品的唯一逐篇注释位置；其他文档只通过稳定 paper ID 指向这里。除 [genpo-2025](#genpo-2025) 与 [dppo-2024](#dppo-2024) 的机制说明来自指定全文版本外，其余条目的证据上限是所记录版本的 abstract 与公开元数据，超出该范围的分析明确标为【推测】。
+本文件是 36 篇入选作品（19 core、17 extended）的唯一逐篇注释位置；其他文档只通过稳定 paper ID 指向这里。除 [dppo-2024](#dppo-2024) 的机制说明来自指定全文版本外，其余条目的证据上限是所记录版本的 abstract 与公开元数据，超出该范围的分析明确标为【推测】。
+
+## 证据约定
+
+【论文直接验证】限定于条目列出的 abstract 或指定全文中的机制、任务与指标；【机制相关】只说明接口相关；【需新证据】表示目标组合或任务尚待验证。超出已查证据范围的分析另标【推测】，“未报告”只限定于本导读查阅的证据范围。
+
+【条件推导】用于列明前提后自足成立的数学关系，见 [04](04-onpolicy-diffusion-interface.md#概率对象)。它不是某篇论文的匿名替代，也不证明任意 sampler 满足可逆性、change-of-variables 或 Jacobian 可计算条件，更不证明训练收益。
+
+【官方工程文档】只支持固定版本的 registry/interface 事实，不是 actor-gain 证据，也不计为新增论文。精确版本、URL、page title 和 fragment 随 [04 的任务协议](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证) 记录；检查器从全部交付 Markdown 收集此类来源并核验最终 URL、状态、标题与 anchor。
 
 ## openai-inhand-2020
 - paper-id：openai-inhand-2020
@@ -155,7 +163,7 @@
 - 解决什么问题：用条件 denoising diffusion process 表示 multimodal、高维 visuomotor action distribution。
 - 方法与信号是什么：学习 action-distribution score，并结合 receding horizon control、visual conditioning 与 time-series diffusion transformer。
 - 验证到哪里及缺口：已覆盖证据：abstract 报告 4 个 manipulation benchmark 的 12 项任务及相对既有方法平均提升 46.9%。 不支持的结论：online RL 与灵巧手专项证据未报告。
-- 对两类读者有什么用：【推测】同事 A 可把它作为 DPPO/GenPO 的生成策略背景，retargeting 读者可把 action chunking 作为从轨迹到闭环策略的一种表示。
+- 对两类读者有什么用：【推测】同事 A 可把它作为 on-policy diffusion 的生成策略背景，retargeting 读者可把 action chunking 作为从轨迹到闭环策略的一种表示。
 - 主源：[arXiv v5](https://arxiv.org/abs/2303.04137v5)
 
 ## dppo-2024
@@ -168,21 +176,8 @@
 - 解决什么问题：让预训练 Diffusion Policy 能以 policy gradient/PPO 进行 online fine-tuning，而不要求显式计算最终 action chunk 的边缘密度。
 - 方法与信号是什么：把每个 Gaussian denoising transition 视为扩展 MDP 的 policy action，ratio 对象是逐步 denoising likelihood；通常从 demonstrations 预训练，支持 action chunk、部分 denoising-step fine-tuning 与 stochastic DDIM exploration。
 - 验证到哪里及缺口：已覆盖证据：Section 5 覆盖 locomotion、Franka Kitchen、Robomimic、Furniture-Bench 与 zero-shot sim-to-real；Appendix D Table A3 的 Lift 单轮训练为 Gaussian-MLP 27.7 s、DPPO-MLP 35.6 s、DPPO-UNet 83.6 s。 不支持的结论：未验证 dexterous hand；不能将 Section 5 的约 2× 概述当作全局开销上限。
-- 对两类读者有什么用：【机制相关】同事 A 应把它作为 GenPO 的核心 on-policy comparator；【机制相关】retargeting 读者可用 demonstration pretraining 加 online fine-tuning 的链条，但灵巧手接触迁移仍需新证据。
+- 对两类读者有什么用：【机制相关】同事 A 应把它作为 denoising-step on-policy optimization 的具名参照；【机制相关】retargeting 读者可用 demonstration pretraining 加 online fine-tuning 的链条，但灵巧手接触迁移仍需新证据。
 - 主源：[arXiv HTML v3 §3](https://arxiv.org/html/2409.00588v3#S3)、[§4](https://arxiv.org/html/2409.00588v3#S4)、[§5](https://arxiv.org/html/2409.00588v3#S5)、[§6](https://arxiv.org/html/2409.00588v3#S6)、[Appendix D](https://arxiv.org/html/2409.00588v3#A4)
-
-## genpo-2025
-- paper-id：genpo-2025
-- title：GenPO: Generative Diffusion Models Meet On-Policy Reinforcement Learning
-- authors-year：Ding 等，2025
-- arxiv：2505.18763v4
-- tier：core
-- evidence：v4 Section 4.1、Eq. (5)；Section 4.2、Eq. (7)–(8)；Section 4.3、Eq. (9)–(12) 与 Algorithm 1；Section 5.1–5.2 与 Section 6；Appendix A、B（Table 10）、C、D.5
-- 解决什么问题：为大规模并行 on-policy RL 构造可计算 exact log-likelihood 的生成式 flow policy。
-- 方法与信号是什么：在 doubled dummy/auxiliary action `ã=(x,y)` 上构造可逆 diffusion mapping，执行 `a=(x+y)/2`，并以 `πθ(ã|s)` 计算 PPO ratio、entropy 与 KL；Algorithm 1 明确保存 dummy action 和 probability。
-- 验证到哪里及缺口：已覆盖证据：Section 5.1 与 Appendix A 在 8 个 IsaacLab benchmark 上验证，含 `Isaac-Repose-Cube-Shadow-Direct-v0`；Section 6 与 Appendix D.5 报告计算/内存开销。 不支持的结论：未报告真机在线 fine-tuning 或 retargeting/residual 组合，auxiliary likelihood 不等于执行动作密度。
-- 对两类读者有什么用：【论文直接验证】同事 A 可据此复现 auxiliary-action likelihood 接口；【机制相关】retargeting 读者可研究其作为 residual/reference-conditioned on-policy actor 的可能性，但该组合与真机收益均【需新证据】。
-- 主源：[arXiv HTML v4 §4](https://arxiv.org/html/2505.18763v4#S4)、[§5](https://arxiv.org/html/2505.18763v4#S5)、[§6](https://arxiv.org/html/2505.18763v4#S6)、[Appendix A](https://arxiv.org/html/2505.18763v4#A1)、[Appendix B](https://arxiv.org/html/2505.18763v4#A2)、[Appendix C](https://arxiv.org/html/2505.18763v4#A3)、[Appendix D.5](https://arxiv.org/html/2505.18763v4#A4.SS5)
 
 ## ppo-2017
 - paper-id：ppo-2017
@@ -207,7 +202,7 @@
 - 解决什么问题：识别 PPO/TRPO 的性能提升有多少来自论文主算法之外的 code-level optimization。
 - 方法与信号是什么：对实现中的 algorithm augmentation 进行 case study 和 attribution。
 - 验证到哪里及缺口：已覆盖证据：abstract 报告这些优化解释 PPO 相对 TRPO 的多数累计回报提升，并会改变算法行为。 不支持的结论：dexterous setting 未报告。
-- 对两类读者有什么用：【推测】两类读者可据此要求所有 GenPO/retargeting 对照共享 observation normalization、optimizer 与 rollout 口径。
+- 对两类读者有什么用：【推测】两类读者可据此要求所有 actor/retargeting 对照共享 observation normalization、optimizer 与 rollout 口径。
 - 主源：[arXiv v1](https://arxiv.org/abs/2005.12729v1)
 
 ## massively-parallel-2021
@@ -246,7 +241,7 @@
 - 解决什么问题：缓解 PPO 在并行环境数量增大后性能饱和、不能继续利用新增数据的问题。
 - 方法与信号是什么：把并行环境拆为 chunks，再通过 importance sampling 聚合 policy-gradient 更新。
 - 验证到哪里及缺口：已覆盖证据：abstract 报告多项 challenging environment 上优于 vanilla PPO 和强基线。 不支持的结论：灵巧手、生成策略及具体计算开销未报告。
-- 对两类读者有什么用：【推测】同事 A 可把它作为 GenPO 并行扩展的 update-layer 对照，retargeting 读者可在固定策略结构后单独测数据聚合收益。
+- 对两类读者有什么用：【推测】同事 A 可把它作为 on-policy 并行扩展的 update-layer 对照，retargeting 读者可在固定策略结构后单独测数据聚合收益。
 - 主源：[arXiv v1](https://arxiv.org/abs/2407.20230v1)
 
 ## demostart-2024
@@ -402,7 +397,7 @@
 - 解决什么问题：从 partial object point cloud 生成、评估并优化 dexterous grasp。
 - 方法与信号是什么：DexSampler 进行 conditional diffusion sampling，DexEvaluator 评分，并用 EGD/ESR refinement。
 - 验证到哪里及缺口：已覆盖证据：abstract 报告相对 FFHNet 的仿真与真机 grasp success 提升。 不支持的结论：抓取后 closed-loop manipulation 未报告。
-- 对两类读者有什么用：【推测】它覆盖 grasp acquisition，而 GenPO/retargeting 主线主要覆盖后续控制，二者不应按同一任务成功率比较。
+- 对两类读者有什么用：【推测】它覆盖 grasp acquisition，与本导读的 in-hand/residual 闭环控制有不同任务边界，二者不应按同一任务成功率比较。
 - 主源：[arXiv v3](https://arxiv.org/abs/2402.02989v3)
 
 ## diffusion-ql-2022
@@ -441,7 +436,7 @@
 - 解决什么问题：系统识别 on-policy continuous-control 实现中大量高低层 design choice 的影响。
 - 方法与信号是什么：在统一框架中实现 50+ choices，并训练 250,000+ agents 进行经验比较。
 - 验证到哪里及缺口：已覆盖证据：abstract 覆盖五个 continuous-control environment。 不支持的结论：灵巧接触、diffusion actor 与 REGRIND 未报告。
-- 对两类读者有什么用：【推测】它要求先固定 update/estimation 细节，再比较 GenPO、residual 或 curriculum 方案。
+- 对两类读者有什么用：【推测】它要求先固定 update/estimation 细节，再比较 diffusion actor、residual 或 curriculum 方案。
 - 主源：[arXiv v1](https://arxiv.org/abs/2006.05990v1)
 
 ## domain-randomization-2017

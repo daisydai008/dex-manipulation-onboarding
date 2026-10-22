@@ -22,7 +22,7 @@ Observation modality 是所有方法族的横切变量，不是算法附注。�
 
 Tactile 能提供视觉不能直接推断的接触信号，但不能从传感器存在推导出完整可观测性。[rotate-touch-2023](bibliography.md#rotate-touch-2023) 的证据是 binary touch-only in-hand rotation 及新物体真机部署；传感器硬件综述不在本仓库范围，history、recurrence 与测量延迟在本条证据中未报告。
 
-History、recurrence 与延迟应独立于 modality 报告。[openai-rubiks-2019](bibliography.md#openai-rubiks-2019) 的 abstract 明确提到 memory-augmented model，但不报告本导读所需的历史窗口长度；[genpo-2025](bibliography.md#genpo-2025) 的 v4 Appendix A 给出 state-space 维度而非可部署 sensor specification，Appendix C 的 diffusion timestep embedding 也不等于 observation history。
+History、recurrence 与延迟应独立于 modality 报告。[openai-rubiks-2019](bibliography.md#openai-rubiks-2019) 的 abstract 明确提到 memory-augmented model，但不报告本导读所需的历史窗口长度。State-space 维度不等于可部署 sensor specification，diffusion timestep embedding 也不等于 observation history。
 
 【需新证据】【推测】比较 partial observability 时应固定观测权限、采样时间和失效注入协议。建议分别评估 privileged state、可部署感知、加入 history/recurrence、加入 observation/action delay 四种变化，并报告 state-estimation error、控制成功率和失败类型；它们是未来评估设计，不是任何入选论文已经共同完成的协议。
 
@@ -34,7 +34,7 @@ Adroit 在本导读中是 demonstration-augmented dexterous RL 的检索入口�
 
 Bi-DexHands 的大规模 simulation 证据不等于多任务已经解决。[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 的 abstract 明确区分单任务成功与多数 multi-task/few-shot 设置失败，并报告 single-/multi-agent 设置；每项任务的动作语义、初始握持状态和 sim-to-real 在该证据中未报告。
 
-IsaacLab 任务族提供可复用仿真接口，但名字相近不保证 benchmark 一致。[isaac-lab-2023](bibliography.md#isaac-lab-2023) 的原文题名是 Orbit，不能凭稳定 ID 推断所有当前 IsaacLab API；[genpo-2025](bibliography.md#genpo-2025) v4 Appendix A 直接列出 `Isaac-Repose-Cube-Shadow-Direct-v0`，state/action 维度为 157/20，任务是立方体目标姿态重定向，不是一般 arm-hand manipulation。
+IsaacLab 任务族提供可复用仿真接口，但名字相近不保证 benchmark 一致。[isaac-lab-2023](bibliography.md#isaac-lab-2023) 的原文题名是 Orbit，不能凭稳定 ID 推断所有当前 IsaacLab API；固定版本的 registry ID 与任务用途见 [04](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证)，不从论文题名推断当前环境配置。
 
 【需新证据】【推测】跨论文比较前应逐项填写 hand-only/arm-hand、动作语义、初始状态、物体泛化与 sim/real 五类条件。动作是 position target、delta target、velocity 还是 torque；物体是否已在手中；测试是新初姿、新实例还是新形状；指标是在仿真、zero-shot 真机还是在线真机训练取得，任何一项未报告都应保留空缺而非按常见配置补全。
 

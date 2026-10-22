@@ -5,7 +5,7 @@
 --self-test 不联网且不写文件；--lint 只运行本地检查。
 """
 import argparse
-from collections import Counter
+from collections import Counter, namedtuple
 import html
 import http.client
 from html.parser import HTMLParser
@@ -22,11 +22,60 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 FILES = {
-    "README.md", "TASK-RECORD.md", "docs/01-problem-structure.md",
+    "README.md", "docs/01-problem-structure.md",
     "docs/02-method-landscape.md", "docs/03-retargeting-to-policy.md",
-    "docs/04-genpo-interface.md", "docs/05-ppo-enhancement.md",
+    "docs/04-onpolicy-diffusion-interface.md", "docs/05-ppo-enhancement.md",
     "docs/bibliography.md", "scripts/check_links.py",
 }
+# CO-1 批准身份：稳定 paper ID -> 所据版本、tier；标题/年份勘误不改变身份。
+# 全局预算保留总量 ≤40、新增 ≤3；本次交付进一步要求新增 0、19 core+17 extended。
+FROZEN_WORKS = {
+    "openai-inhand-2020": ("1808.00177v5", "core"),
+    "openai-rubiks-2019": ("1910.07113v1", "core"),
+    "dextreme-2022": ("2210.13702v2", "core"),
+    "visual-dexterity-2022": ("2211.11744v3", "core"),
+    "sequential-dexterity-2023": ("2309.00987v2", "core"),
+    "dapg-2018": ("1709.10087v2", "core"),
+    "bi-dexhands-2023": ("2206.08686v2", "core"),
+    "isaac-lab-2023": ("2301.04195v2", "core"),
+    "dexpilot-2020": ("1910.03135v2", "core"),
+    "anyteleop-2023": ("2307.04577v3", "core"),
+    "dexcap-2024": ("2403.07788v2", "core"),
+    "diffusion-policy-2023": ("2303.04137v5", "core"),
+    "dppo-2024": ("2409.00588v3", "core"),
+    "ppo-2017": ("1707.06347v2", "core"),
+    "implementation-matters-2020": ("2005.12729v1", "core"),
+    "massively-parallel-2021": ("2109.11978v3", "core"),
+    "residual-rl-2018": ("1812.03201v2", "core"),
+    "sapg-2024": ("2407.20230v1", "core"),
+    "demostart-2024": ("2409.06613v2", "core"),
+    "leap-hand-2023": ("2309.06440v1", "extended"),
+    "zhu-2018": ("1810.06045v1", "extended"),
+    "trifinger-2021": ("2108.09779v2", "extended"),
+    "rotate-touch-2023": ("2303.10880v4", "extended"),
+    "openteach-2024": ("2403.07870v1", "extended"),
+    "bunny-visionpro-2024": ("2407.03162v1", "extended"),
+    "robotic-telekinesis-2022": ("2202.10448v2", "extended"),
+    "mimicplay-2023": ("2302.12422v2", "extended"),
+    "dexmimicgen-2024": ("2410.24185v2", "extended"),
+    "dp3-2024": ("2403.03954v7", "extended"),
+    "dexdiffuser-2023": ("2402.02989v3", "extended"),
+    "diffusion-ql-2022": ("2208.06193v3", "extended"),
+    "idql-2023": ("2304.10573v2", "extended"),
+    "on-policy-actor-critic-2020": ("2006.05990v1", "extended"),
+    "domain-randomization-2017": ("1703.06907v1", "extended"),
+    "mappo-2021": ("2103.01955v4", "extended"),
+    "deepmimic-2018": ("1804.02717v3", "extended"),
+}
+READING_HEADINGS = ("Diffusion 与 on-policy RL 阅读路径", "Retargeting 与 residual RL 阅读路径")
+OFFICIAL_HOST = "isaac-sim.github.io"
+OFFICIAL_PATH = "/IsaacLab/v2.2.0/source/overview/environments.html"
+OFFICIAL_TITLE = "Available Environments — Isaac Lab Documentation"
+OFFICIAL_ANCHORS = {
+    "manipulation": ("Isaac-Repose-Cube-Shadow-Direct-v0", "Isaac-Lift-Cube-Franka-v0"),
+    "classic": ("Isaac-Ant-v0",),
+}
+FetchResult = namedtuple("FetchResult", "body final_url status")
 FIELDS = ("paper-id", "title", "authors-year", "arxiv", "tier", "evidence",
           "解决什么问题", "方法与信号是什么", "验证到哪里及缺口", "对两类读者有什么用")
 ARXIV = re.compile(r"\d{4}\.\d{4,5}v[1-9]\d*")
@@ -172,23 +221,7 @@ def parse_entries(text):
     return entries, errors
 
 
-def seed_manifest(text):
-    seed = {}
-    tier = None
-    for line in text.splitlines():
-        if line.startswith("### 3.1 "):
-            tier = "core"
-        elif line.startswith("### 3.2 "):
-            tier = "extended"
-        elif line.startswith("### 3.3 "):
-            break
-        m = re.match(r"- ([a-z0-9-]+) \| (\d{4}\.\d{4,5}v\d+) \|", line)
-        if m and tier:
-            seed[m[1]] = (m[2], tier)
-    return seed
-
-
-def entry_budget(entries, seed):
+def entry_budget(entries, seed=FROZEN_WORKS):
     errors = []
     actual = {e.get("paper-id"): e for e in entries}
     for pid, (version, tier) in seed.items():
@@ -199,12 +232,17 @@ def entry_budget(entries, seed):
     additions = set(actual) - set(seed)
     if len(entries) > 40 or len(additions) > 3:
         errors.append("文献预算超限")
+    if additions:
+        errors.append("CO-1 不允许新增条目: " + ", ".join(sorted(additions)))
+    tiers = Counter(e.get("tier") for e in entries)
+    if len(entries) != 36 or tiers["core"] != 19 or tiers["extended"] != 17:
+        errors.append("CO-1 数量须为 entries=36 core=19 extended=17")
     return errors, len(additions)
 
 
 def reading_paths(text, ids):
     errors, sizes = [], []
-    for heading in ("同事 A 路径", "Retargeting 路径"):
+    for heading in READING_HEADINGS:
         m = re.search(r"^## " + heading + r"\s*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
         refs = re.findall(r"docs/bibliography\.md#([a-z0-9-]+)", m[1]) if m else []
         sizes.append(len(refs))
@@ -237,15 +275,70 @@ class Page(HTMLParser):
         super().__init__()
         self.meta = {}
         self.ids = set()
+        self.title_parts = []
+        self.title_count = 0
+        self.in_title = False
+        self.text_parts = []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
+        if tag == "title":
+            self.in_title = True
+            self.title_count += 1
         if tag == "meta":
             self.meta[attrs.get("name")] = attrs.get("content", "")
         if "id" in attrs:
             self.ids.add(attrs["id"])
         if tag == "a" and "name" in attrs:
             self.ids.add(attrs["name"])
+
+    def handle_endtag(self, tag):
+        if tag == "title":
+            self.in_title = False
+
+    def handle_data(self, data):
+        self.text_parts.append(data)
+        if self.in_title:
+            self.title_parts.append(data)
+
+    @property
+    def title(self):
+        return " ".join("".join(self.title_parts).split())
+
+
+def official_url_issue(url, require_fragment=True):
+    """官方工程文档白名单同时约束 host、固定版本 path 与 fragment。"""
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme not in ("http", "https") or parsed.netloc != OFFICIAL_HOST:
+        return "官方工程文档 hostname/scheme 不符"
+    if parsed.path != OFFICIAL_PATH or parsed.query:
+        return "官方工程文档固定版本/path 不符"
+    fragment = urllib.parse.unquote(parsed.fragment)
+    if (require_fragment or fragment) and fragment not in OFFICIAL_ANCHORS:
+        return "官方工程文档 fragment 未绑定"
+    return None
+
+
+def official_page_issue(url, result):
+    issue = official_url_issue(url) or official_url_issue(result.final_url, require_fragment=False)
+    if issue:
+        return issue
+    if result.status != 200:
+        return "官方工程文档最终 status 非 200"
+    fragment = urllib.parse.unquote(urllib.parse.urlsplit(url).fragment)
+    final_fragment = urllib.parse.unquote(urllib.parse.urlsplit(result.final_url).fragment)
+    if final_fragment and final_fragment != fragment:
+        return "官方工程文档 redirect 改变 fragment"
+    page = Page()
+    page.feed(result.body)
+    if page.title_count != 1 or page.title != OFFICIAL_TITLE:
+        return "官方工程文档 page title 不符"
+    if fragment not in page.ids:
+        return "官方工程文档死 anchor: " + fragment
+    text = " ".join(page.text_parts)
+    if any(pid not in text for pid in OFFICIAL_ANCHORS[fragment]):
+        return "官方工程文档缺少绑定的 registry ID"
+    return None
 
 
 def api_metadata(body, entry):
@@ -298,7 +391,8 @@ class Fetcher:
             remaining = self.deadline - self.clock()
             if remaining <= 0:
                 raise NetworkIncomplete("总运行上限 15 分钟")
-            wait = max(0, 1.05 - (self.clock() - self.last.get(host, -1000)))
+            interval = 3.05 if host == "export.arxiv.org" else 1.05
+            wait = max(0, interval - (self.clock() - self.last.get(host, -1000)))
             if wait >= remaining:
                 raise NetworkIncomplete("总运行上限 15 分钟")
             self.sleep(wait)
@@ -313,9 +407,14 @@ class Fetcher:
             try:
                 request = urllib.request.Request(url, headers={"User-Agent": "dex-onboarding-link-check/1.0"})
                 with self.opener(request, timeout=timeout) as response:
+                    status = response.status
+                    final_url = response.geturl()
                     body = response.read().decode("utf-8", errors="strict")
-                self.cache[url] = body
-                return body
+                if status != 200:
+                    raise ContentFailure(f"最终 HTTP {status}: {final_url}")
+                result = FetchResult(body, final_url, status)
+                self.cache[url] = result
+                return result
             except urllib.error.HTTPError as exc:
                 if exc.code in (301, 302, 303, 307, 308) and exc.headers.get("Location"):
                     redirect_url = urllib.parse.urljoin(url, exc.headers["Location"])
@@ -326,10 +425,10 @@ class Fetcher:
                         raise ContentFailure(f"HTTP {exc.code}: {url}") from exc
                     reason = f"HTTP {exc.code}"
                     retry_after = exc.headers.get("Retry-After", "") if exc.headers else ""
-                    if retry_after.isdigit() and attempt < 2:
-                        delay = float(retry_after)
+                    if attempt < 2:
+                        delay = max(5.0 * (2 ** attempt), float(retry_after) if retry_after.isdigit() else 0.0)
                         if self.clock() + delay >= self.deadline:
-                            raise NetworkIncomplete("Retry-After 超出总预算") from exc
+                            raise NetworkIncomplete("重试等待超出总预算") from exc
                         retry_delay = delay
             except (urllib.error.URLError, TimeoutError, socket.timeout, ConnectionError, OSError, http.client.HTTPException) as exc:
                 reason = type(exc).__name__
@@ -377,16 +476,12 @@ def local_checks():
         except (OSError, UnicodeError) as exc:
             errors.append(f"{name}: {exc}")
             continue
-        if name != "TASK-RECORD.md":
-            errors.extend(f"{name}: {e}" for e in style_errors(texts[name]))
-            counts = Counter(anchors(texts[name]))
-            errors.extend(f"{name}: 重复 anchor {a}" for a, n in counts.items() if n > 1)
+        errors.extend(f"{name}: {e}" for e in style_errors(texts[name]))
+        counts = Counter(anchors(texts[name]))
+        errors.extend(f"{name}: 重复 anchor {a}" for a, n in counts.items() if n > 1)
     entries, issues = parse_entries(texts.get("docs/bibliography.md", ""))
     errors.extend(issues)
-    seed = seed_manifest(texts.get("TASK-RECORD.md", ""))
-    if len(seed) != 37:
-        errors.append("冻结清单无法解析为 37 条")
-    issues, additions = entry_budget(entries, seed)
+    issues, additions = entry_budget(entries)
     errors.extend(issues)
     issues, sizes = reading_paths(texts.get("README.md", ""), {e.get("paper-id") for e in entries})
     errors.extend(issues)
@@ -395,16 +490,26 @@ def local_checks():
     for source, text in texts.items():
         for url in links(text):
             if url.startswith(("https://", "http://")):
-                if source == "docs/bibliography.md":
-                    external.add(url)
+                external.add(url)
+                parsed = urllib.parse.urlsplit(url)
+                if parsed.hostname not in ("arxiv.org", "export.arxiv.org", "doi.org"):
+                    issue = official_url_issue(url)
+                    if issue:
+                        errors.append(source + ": " + issue + ": " + url)
                 continue
             internal += 1
             issue = relative_link(source, url, texts)
             if issue:
                 errors.append(source + ": " + issue)
     tiers = Counter(e.get("tier") for e in entries)
-    print(f"STRUCTURE: expected=9 actual={len(actual)} {'PASS' if actual == FILES else 'FAIL'}")
-    print(f"STYLE: utf8_files={len([n for n in texts if n != 'TASK-RECORD.md'])} (UTF-8 strict; fence-aware tables; banned terms)")
+    print(f"STRUCTURE: expected=8 actual={len(actual)} {'PASS' if actual == FILES else 'FAIL'}")
+    print(f"STYLE: utf8_files={len(texts)} (UTF-8 strict; fence-aware tables; banned terms)")
+    candidates = [(name, n, line) for name, text in sorted(texts.items())
+                  for n, line in enumerate(text.splitlines(), 1) if "门" in line]
+    print(f"METAPHOR-CANDIDATES: {len(candidates)} (仅列候选，人工裁决)")
+    for name, n, line in candidates:
+        print(f"CANDIDATE {name}:{n}: {line}")
+    print(f"OFFICIAL-SOURCES: {sum(official_url_issue(u) is None for u in external)} (全部交付 Markdown)")
     print(f"LINT: entries={len(entries)} core={tiers['core']} extended={tiers['extended']} additions={additions} paths={'/'.join(map(str, sizes))} internal_links={internal}")
     return entries, errors, external, internal
 
@@ -418,7 +523,8 @@ def full_check(entries, external, internal):
     for kind, url, entry in jobs:
         try:
             base, fragment = urllib.parse.urldefrag(url)
-            body = fetch.get(base)
+            result = fetch.get(base)
+            body = result.body
             issue = None
             if kind == "api":
                 issue = api_metadata(body, entry)
@@ -438,14 +544,17 @@ def full_check(entries, external, internal):
                             issue = "abs title 元数据不符"
                     elif normalize_title(index[match[2]]["title"]) not in normalize_title(body):
                         issue = "HTML title 不符"
-                elif not (parsed.hostname == "doi.org" or page.meta.get("citation_doi")):
-                    issue = "非 arXiv 链接须是 DOI/publisher 主源（缺 citation_doi）"
+                elif parsed.hostname == "doi.org":
+                    if not page.meta.get("citation_doi"):
+                        issue = "DOI 最终页缺 citation_doi"
+                else:
+                    issue = official_page_issue(url, result)
                 if fragment and urllib.parse.unquote(fragment) not in page.ids:
                     issue = "外部死 anchor: " + fragment
             if issue:
                 raise ContentFailure(issue + ": " + url)
             verified += 1
-            print("VERIFIED " + url, flush=True)
+            print(f"VERIFIED {url} [status={result.status} final={result.final_url}]", flush=True)
         except ContentFailure as exc:
             failed += 1
             print("FAILED " + str(exc), flush=True)
@@ -502,10 +611,30 @@ def self_test():
     check(not table_lines("> ```\n> A | B\n> --- | ---\n> ```"), "blockquote code fence")
     check(cells("A" + chr(92) + "|B | C") == ["A" + chr(92) + "|B", "C"], "escaped table pipe")
     check(cells("A" + chr(92) * 2 + "|B | C") == ["A" + chr(92) * 2, "B", "C"], "even backslashes before table pipe")
+    check(bool(table_lines("A | B\n--- | ---")) and not table_lines("```md\nA | B\n--- | ---\n```"),
+          "fence-aware style checks apply to authorized prose")
     check(bool(style_errors(BANNED[0])), "banned term detected without echo")
     check(normalize_title("Title: A-B") == normalize_title("TITLE A B"), "title punctuation/case normalization")
     check(bool(reading_paths("## 同事 A 路径\n", {"sample-2024"})[0]), "missing/short reading paths")
     check(bool(entry_budget(entries * 41, {})[0]), "total and addition budgets")
+    frozen = [{"paper-id": pid, "arxiv": version, "tier": tier}
+              for pid, (version, tier) in FROZEN_WORKS.items()]
+    check(entry_budget(frozen) == ([], 0), "approved 36 identities and 19/17 tiers")
+    check(any("缺少冻结条目" in e for e in entry_budget(frozen[1:])[0]), "deleted frozen ID")
+    replaced = [dict(e) for e in frozen]
+    replaced[0]["paper-id"] = "replacement-2024"
+    check(any("缺少冻结条目" in e for e in entry_budget(replaced)[0]), "replaced frozen ID")
+    for key, value in (("arxiv", "1808.00177v6"), ("tier", "extended")):
+        changed = [dict(e) for e in frozen]
+        changed[0][key] = value
+        check(any("身份/版本/tier" in e for e in entry_budget(changed)[0]), "frozen " + key + " tamper")
+    check(any("不允许新增" in e for e in entry_budget(frozen + entries)[0]), "CO-1 addition rejected within global budget")
+    reading = "\n".join("## " + heading + "\n" + "\n".join(
+        f"{i}. [p](docs/bibliography.md#{e['paper-id']})" for i, e in enumerate(frozen[:6], 1))
+        for heading in READING_HEADINGS)
+    ids = {e["paper-id"] for e in frozen}
+    check(reading_paths(reading, ids) == ([], [6, 6]), "new reading headings and valid paths")
+    check(bool(reading_paths(reading.replace(frozen[0]["paper-id"], "unknown-id"), ids)[0]), "unknown reading-path ID")
     for code in ("timeout", 429, 503):
         calls = []
         now = [0.0]
@@ -523,7 +652,17 @@ def self_test():
         except NetworkIncomplete:
             outcome = True
         check(outcome and len(calls) == 3 and all(b - a >= 1 for a, b in zip(calls, calls[1:])), f"{code}: 2 retries, rate limit, unverified")
+        if code != "timeout":
+            check(calls[1] - calls[0] >= 5 and calls[2] - calls[1] >= 10, f"{code}: bounded retry backoff")
     class Response:
+        status = 200
+
+        def __init__(self, url, body="OK"):
+            self.url, self.body = url, body
+
+        def geturl(self):
+            return self.url
+
         def __enter__(self):
             return self
 
@@ -531,7 +670,7 @@ def self_test():
             return False
 
         def read(self):
-            return b"OK"
+            return self.body.encode("utf-8")
 
     now, calls = [0.0], []
 
@@ -539,10 +678,12 @@ def self_test():
         calls.append(now[0])
         if request.full_url.endswith("/old"):
             raise urllib.error.HTTPError(request.full_url, 302, "mock", {"Location": "/new"}, None)
-        return Response()
+        return Response(request.full_url)
 
     client = Fetcher(opener=redirect_opener, clock=lambda: now[0], sleep=lambda n: now.__setitem__(0, now[0] + n), alarms=False)
-    check(client.get("https://example.invalid/old") == "OK" and calls[1] - calls[0] >= 1, "redirect respects per-host interval")
+    fetched = client.get("https://example.invalid/old")
+    check(fetched == FetchResult("OK", "https://example.invalid/new", 200) and calls[1] - calls[0] >= 1,
+          "redirect preserves final URL/status and per-host interval")
     now[0] = 901
     try:
         client.get("https://example.invalid/uncached")
@@ -560,6 +701,45 @@ def self_test():
     except ContentFailure:
         missing = True
     check(missing, "404 is content failure")
+
+    official_base = "https://" + OFFICIAL_HOST + OFFICIAL_PATH
+    official_url = official_base + "#manipulation"
+    official_body = ("<html><title>" + html.escape(OFFICIAL_TITLE) + "</title>"
+                     '<section id="manipulation">' + " ".join(OFFICIAL_ANCHORS["manipulation"]) + "</section></html>")
+    valid = FetchResult(official_body, official_base, 200)
+    check(official_page_issue(official_url, valid) is None, "valid fixed-version official page")
+    for label, result in (
+        ("200 wrong official title", valid._replace(body=official_body.replace("Available Environments", "Not Found"))),
+        ("wrong official version", valid._replace(final_url=official_base.replace("v2.2.0", "main"))),
+        ("non-official host", valid._replace(final_url=official_base.replace(OFFICIAL_HOST, "example.invalid"))),
+        ("dead official anchor", valid._replace(body=official_body.replace('id="manipulation"', 'id="other"'))),
+        ("missing registry ID", valid._replace(body=official_body.replace(OFFICIAL_ANCHORS["manipulation"][0], "other"))),
+        ("non-200 final status", valid._replace(status=204)),
+        ("redirect changes fragment", valid._replace(final_url=official_base + "#classic")),
+    ):
+        check(official_page_issue(official_url, result) is not None, label)
+    check(official_page_issue(official_url.replace(OFFICIAL_HOST, "example.invalid"), valid) is not None,
+          "non-official requested host")
+    check(official_page_issue(official_url.replace("v2.2.0", "latest"), valid) is not None,
+          "unversioned requested path")
+    check(official_page_issue(official_base + "#dead", valid) is not None, "unbound requested fragment")
+    for label, target, expected in (
+        ("legal official HTTP-to-HTTPS redirect", official_base, True),
+        ("redirect to non-official host rejected", official_base.replace(OFFICIAL_HOST, "example.invalid"), False),
+        ("redirect to wrong version rejected", official_base.replace("v2.2.0", "v2.1.0"), False),
+    ):
+        now = [0.0]
+        requested = official_base.replace("https://", "http://")
+
+        def official_redirect(request, timeout):
+            if request.full_url == requested:
+                raise urllib.error.HTTPError(request.full_url, 301, "mock", {"Location": target}, None)
+            return Response(request.full_url, official_body)
+
+        client = Fetcher(opener=official_redirect, clock=lambda: now[0],
+                         sleep=lambda n: now.__setitem__(0, now[0] + n), alarms=False)
+        result = client.get(requested)
+        check((official_page_issue(requested + "#manipulation", result) is None) == expected, label)
     check(exit_code(0, 1) == 3 and exit_code(1, 1) == 2 and exit_code(0, 0) == 0, "three exit classes")
     print(f"SELF-TEST: {checks} passed, 0 failed; no network/files written")
     return 0

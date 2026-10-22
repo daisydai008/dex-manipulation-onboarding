@@ -4,6 +4,16 @@ PPO 增强应按修改位置分成 update/estimation、demonstration/residual �
 
 本章的所有 REGRIND 插入点都是适配假设，不是源码审计或训练结果。工单给出的 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练只是接口背景；每个方向均列 baseline 问题、数据/信号、改动接口、证据层级与隔离评估，并用【推测】标注超出 abstract 的实现建议。
 
+## 从失败信号选择接口
+
+【机制相关】【需新证据】update-stage KL/clip fraction 异常时，先排查 log-prob、advantage 与 normalization，再单独改变 LR、epoch 或 clip。记录同一原始 action 的新旧 likelihood、done/truncation 与估计量，避免把记录错误当作优化不稳；何时不选：如果问题发生在 rollout 执行前的 reference/reset 或观测不可得环节，不先调整 optimizer。依据是 [implementation-matters-2020](bibliography.md#implementation-matters-2020) 的实现归因问题，具体顺序是待验证的诊断设计。
+
+【机制相关】【需新证据】几何匹配但接触不可行时，先检查 reference、base controller 和 feasible resets，不先归咎 actor。记录 object support/slip、base-only 失败、residual 饱和与接触一致性，先改变可执行性接口再考虑策略参数化；何时不选：若相同 reference/base 已通过闭环检查、失败明确集中在 update 之后，转查概率与估计接口。依据与边界见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
+
+【机制相关】【需新证据】早期失败使后续 phase 缺少样本时，先检查分阶段覆盖与 reset 可行率，再比较 phase resets/curriculum。保持 actor/reward 不变，并始终在固定部署初始状态上报告 end-to-end success；何时不选：若中间接触状态无法重建，或各 phase 已有充分覆盖，不以改 reset 掩盖 reference 或 update 缺陷。该路线仅借鉴 [demostart-2024](bibliography.md#demostart-2024) 的课程相关性。
+
+【机制相关】【需新证据】只有 observation、数据与 update 口径一致后仍有动作表示不足的信号，才比较 diffusion actor。先验证多模态成功动作与 Gaussian baseline 的失败关联，再改变 actor 和必要的概率记录接口；何时不选：若主要问题是部署输入缺失、示范未成功、log-prob 错误或 latency 超预算，不用更复杂 actor 替代修复。候选依据 [diffusion-policy-2023](bibliography.md#diffusion-policy-2023) 与 [dppo-2024](bibliography.md#dppo-2024)，目标任务收益仍需实验。
+
 ## Update/estimation 层
 
 ### 固定 PPO 更新与估计口径
@@ -16,11 +26,11 @@ Baseline 问题是同名 PPO 实现可能在 normalization、optimizer 与 rollo
 
 ### 更换 actor 与 likelihood 对象
 
-Baseline 问题是 Gaussian actor 可能不足以表达示范中的多模态动作，而替换为 diffusion actor 会同时改变 likelihood 与计算量。【论文直接验证】[dppo-2024](bibliography.md#dppo-2024) v3 §4–5 验证 denoising-step PPO 与 demonstration fine-tuning，[genpo-2025](bibliography.md#genpo-2025) v4 §4–5 验证 auxiliary-action PPO 及 Shadow Hand benchmark；没有统一任务下的二者 head-to-head 结果。
+Baseline 问题是 Gaussian actor 在一致数据和更新条件下可能仍无法表达任务所需的动作模式，替换 diffusion actor 则会改变 likelihood 与计算量。【论文直接验证】[dppo-2024](bibliography.md#dppo-2024) v3 §4–5 验证 denoising-step PPO 与 demonstration fine-tuning；它不是任意 auxiliary-action 模型可逆、可求 exact density 或已获灵巧手收益的证据。
 
-【机制相关】【推测】所需信号取决于候选：GenPO 保存原始 auxiliary action 与 old log-prob，DPPO 保存 denoising trajectory 所需的扩展 state/action 信息；改动接口是 actor sampling、rollout schema 和 likelihood evaluation。面向 REGRIND 的适配假设只允许先固定 base controller/reference 和参数无关的执行 mapping，具体数学边界见 [04](04-genpo-interface.md#固定-mapping-与-residual)。
+【机制相关】【需新证据】所需信号由概率对象决定。符合 [04 条件推导](04-onpolicy-diffusion-interface.md#rollout-记录) 的 auxiliary actor 保存原始辅助动作、old log-prob 与 conditioning，DPPO 则保存可重建 denoising trajectory likelihood 的扩展 state/action 信息；改动接口是 sampling、rollout schema 与 likelihood evaluation。面向 REGRIND 的适配假设是先固定 base/reference 与参数无关的执行 mapping，边界见 [04](04-onpolicy-diffusion-interface.md#固定执行-mapping)。
 
-【需新证据】【推测】隔离评估应把 Gaussian、GenPO 与有同源 demonstrations 的 DPPO 分开设置公平对照，不能把预训练数据差异当作 actor expressiveness。分别控制 environment interaction budget 和 wall-clock budget，记录 inference latency、GPU memory、更新耗时、成功率与恢复行为；[genpo-2025](bibliography.md#genpo-2025) v4 §6/D.5 和 [dppo-2024](bibliography.md#dppo-2024) v3 §5/D 的开销报告只能支持“必须测量”，不能支持预设赢家。
+【需新证据】隔离评估先建立 Gaussian baseline，再在同任务与同源 demonstrations 条件下比较候选 diffusion actor。分别控制 interactions 和 wall-clock，记录 inference latency、显存、更新耗时、成功率与恢复行为；若 actor、update schema、pretraining 同时改变，只能归因于组合，不能将差异单独解释为 actor expressiveness。[dppo-2024](bibliography.md#dppo-2024) v3 §4.3、Appendix D 的计算讨论不提供目标任务的预设赢家。
 
 ## Demonstration/residual 集成层
 
@@ -36,7 +46,7 @@ Baseline 问题是 sparse success 或高维接触探索导致从零学习成本�
 
 Baseline 问题是位置级 reference 的几何匹配不能消除真实接触与摩擦误差。【论文直接验证】[residual-rl-2018](bibliography.md#residual-rl-2018) 的 abstract 验证 conventional control 与 RL signal superposition 的真机 block assembly；它没有验证 retargeting、diffusion actor 或灵巧手的任意组合。
 
-【机制相关】【推测】所需信号是 base command、policy 原始动作、执行后 command、tracking error、object state 与接触反馈；改动接口是 action composition 和 reward attribution。面向 REGRIND 的适配假设是冻结 base mapping 与 residual scale 后再训练 residual；对 auxiliary actor 必须保留 policy action，不能用 clipped actuator command 替代 ratio 中的随机变量，理由见 [04](04-genpo-interface.md#固定-mapping-与-residual)。
+【机制相关】【推测】所需信号是 base command、policy 原始动作、执行后 command、tracking error、object state 与接触反馈；改动接口是 action composition 和 reward attribution。面向 REGRIND 的适配假设是冻结 base mapping 与 residual scale 后再训练 residual；对 auxiliary actor 必须保留 policy action，不能用 clipped actuator command 替代 ratio 中的随机变量，理由见 [04](04-onpolicy-diffusion-interface.md#固定执行-mapping)。
 
 【需新证据】【推测】隔离评估应比较 base-only、同 reference 的 Gaussian residual、直接控制以及候选 diffusion residual。记录 task success、residual magnitude、饱和比例、接触失败与外推 reference 上的稳定性，且单独测 base controller 变更；[residual-rl-2018](bibliography.md#residual-rl-2018) 只支持该分工的机制相关性，不保证所有不可行 reference 都能由 residual 修复。
 
@@ -52,7 +62,7 @@ Baseline 问题是长 reference 的早期失败让策略无法接触后续状态
 
 Baseline 问题是并行数据增加后 PPO 性能饱和，不是示范不足。【论文直接验证】[sapg-2024](bibliography.md#sapg-2024) 的 abstract 提出拆分环境 chunks 再以 importance sampling 聚合；本节因其涉及多来源 rollout 集成而讨论它，但 SAPG 本身不是 demonstration 或 residual 方法。
 
-【机制相关】【推测】所需信号是各采样 policy 的 likelihood、trajectory 来源和对应 advantage；改动接口是 rollout partition、behavior-policy bookkeeping 与 importance weighting。面向 REGRIND 的适配假设是先在同一任务/同一 residual actor 下验证聚合，再考虑不同 reference phase 的数据；abstract 未报告跨 phase 混合或 GenPO 集成，这些不能作为现成算法选项宣称。
+【机制相关】【推测】所需信号是各采样 policy 的 likelihood、trajectory 来源和对应 advantage；改动接口是 rollout partition、behavior-policy bookkeeping 与 importance weighting。面向 REGRIND 的适配假设是先在同一任务/同一 residual actor 下验证聚合，再考虑不同 reference phase 的数据；abstract 未报告跨 phase 混合或 auxiliary-action actor 集成，这些不能作为现成算法选项宣称。
 
 【需新证据】【推测】隔离评估应固定总环境数量、总 samples 和网络容量，对比 vanilla PPO 与 SAPG-style aggregation，另扫并行规模。记录 importance-weight 分布、有效样本量、回报、GPU 时间和内存；候选是否适合 REGRIND 取决于实测瓶颈，不能从 [sapg-2024](bibliography.md#sapg-2024) 的其他环境结果推断手部收益。
 
@@ -92,6 +102,6 @@ Baseline 问题是多任务数据可能竞争 shared capacity，而不是把单�
 
 ## 评估顺序与停止条件
 
-【机制相关】【推测】选型顺序应先确认 baseline 的观测、动作与 update 记录正确，再按瓶颈选择一个方向。成功示范足够时优先比较 imitation 初始化，几何 reference 可用但动力学偏差明显时比较 residual，探索覆盖不足时比较 reset curriculum，吞吐扩展饱和时比较 aggregation；只有在共同数据和 update 口径固定后，才把 [dppo-2024](bibliography.md#dppo-2024) 或 [genpo-2025](bibliography.md#genpo-2025) 作为 actor 候选。这是基于上述证据的条件选择，不是优劣排名。
+【机制相关】【推测】选型顺序应先确认 baseline 的观测、动作与 update 记录正确，再按瓶颈选择一个方向。成功示范足够时优先比较 imitation 初始化，几何 reference 可用但动力学偏差明显时比较 residual，探索覆盖不足时比较 reset curriculum，吞吐扩展饱和时比较 aggregation；只有在共同数据和 update 口径固定后，才把 [dppo-2024](bibliography.md#dppo-2024) 或 [04](04-onpolicy-diffusion-interface.md#概率对象) 中满足条件的模型作为 actor 候选。这是基于上述证据的条件选择，不是优劣排名。
 
 【需新证据】【推测】每次实验都应有明确的停止条件和复核节点。若原始 action/log-prob 不一致、reference reset 物理不可行、部署观测不可得或 compute budget 不支持目标控制周期，应先修复接口而不是继续叠加增强；若改善只出现在训练 reward 而非固定测试 task success，则保留负结果。该评估原则呼应 [implementation-matters-2020](bibliography.md#implementation-matters-2020) 的归因问题，不构成本仓库外的代码实施授权。
