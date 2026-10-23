@@ -1,6 +1,6 @@
 # 生成式策略接入 on-policy RL 的历史线
 
-本文件展开 README 背景节的第二段，供需要完整历史脉络的读者。它只覆盖"如何把 diffusion/flow 一类生成模型用进需要逐样本 log-likelihood 的 on-policy 更新"这条线，不做整个 diffusion-RL 的综述。所有文献身份、版本与所据证据以 [../bibliography](../bibliography.md) 为准；除 dppo-2024 的指定全文外，其余仅到所记录版本的 abstract，越出另标【推测】。
+本文件展开 README 背景节的第二段，供需要完整历史脉络的读者。它只覆盖"如何把 diffusion/flow 一类生成模型用进需要逐样本 log-likelihood 的 on-policy 更新"这条线，不做整个 diffusion-RL 的综述。所有文献身份、版本与所据证据以 [../bibliography](../bibliography.md) 为准；除 dppo-2024 的指定全文与七篇真机灵巧手 diffusion 部署条目外，其余仅到所记录版本的 abstract，越出另标【推测】。
 
 ## 起点：条件动作生成
 
@@ -30,4 +30,8 @@ PPO 一类 on-policy 算法的 ratio 是 `exp(log qθ(a|c) − log qold(a|c))`�
 
 【需新证据】【推测】上述两条路线的验证主要来自 locomotion、Franka Kitchen、Robomimic、Furniture-Bench 等任务；灵巧手接触丰富、动作维数高、sim-to-real 间隙大，是否继承这些收益尚待验证。这正是本导读的四条起步路线要回答的：先在固定执行 mapping 下做 actor 隔离替换，再按瓶颈选择 denoising-step 或 exact-inversion，最后才谈真机。
 
-【需新证据】【推测】更具体地说，早期 diffusion 证据几乎没有落在真实多指灵巧手上：diffusion-policy-2023、diffusion-ql-2022、idql-2023 的 abstract 真机或仿真评估均不是多指灵巧手；dppo-2024 v3 全文为 locomotion / Franka Kitchen / Robomimic / Furniture-Bench 加 Furniture-Bench 的 zero-shot 真机转移，无灵巧手；dp3-2024 的 abstract 报告仿真与真机任务，但其灵巧手部分不在本仓库记录的 abstract 证据内。本导读经全文核实补入七篇真机灵巧手 diffusion 部署：imitation 路线的 [dexvla-2025](../bibliography.md#dexvla-2025)、[dexwild-2025](../bibliography.md#dexwild-2025)、[dexumi-2025](../bibliography.md#dexumi-2025)、[dexcast-2026](../bibliography.md#dexcast-2026)、[human2dex-2026](../bibliography.md#human2dex-2026)、[skillweave-2026](../bibliography.md#skillweave-2026)，以及最接近本主线的 [modex-2026](../bibliography.md#modex-2026)——它在真机 Allegro 上用 DPPO 对 diffusion policy 做在线 fine-tune。但需注意：MoDex 的任务是顺序多物体抓取，不是接触丰富的 in-hand 重定向。对做 on-policy diffusion 的读者，真正的空缺据此收窄为：把生成式 on-policy 更新用到接触丰富的 in-hand 灵巧操作真机上，这条组合仍无人占住。要落地最新部署时应另行检索并验证其手部形态与策略类型。
+【需新证据】【推测】更具体地说，早期 diffusion 证据几乎没有落在真实多指灵巧手上：diffusion-policy-2023、diffusion-ql-2022、idql-2023 的 abstract 真机或仿真评估均不是多指灵巧手；dppo-2024 v3 全文为 locomotion / Franka Kitchen / Robomimic / Furniture-Bench 加 Furniture-Bench 的 zero-shot 真机转移，无灵巧手；dp3-2024 的 abstract 报告仿真与真机任务，但其灵巧手部分不在本仓库记录的 abstract 证据内。
+
+【需新证据】【推测】本导读经全文核实补入七篇真机灵巧手 diffusion 部署：imitation 路线的 [dexvla-2025](../bibliography.md#dexvla-2025)、[dexwild-2025](../bibliography.md#dexwild-2025)、[dexumi-2025](../bibliography.md#dexumi-2025)、[dexcast-2026](../bibliography.md#dexcast-2026)、[human2dex-2026](../bibliography.md#human2dex-2026)、[skillweave-2026](../bibliography.md#skillweave-2026)，以及最接近本主线的 [modex-2026](../bibliography.md#modex-2026)——它在真机 Allegro 上用 DPPO 对 diffusion policy 做在线 fine-tune。
+
+【需新证据】【推测】但 MoDex 的任务是顺序多物体抓取，不是接触丰富的 in-hand 重定向。对做 on-policy diffusion 的读者，真正的空缺据此收窄为：把生成式 on-policy 更新用到接触丰富的 in-hand 灵巧操作真机上，这条组合仍无人占住。要落地最新部署时应另行检索并验证其手部形态与策略类型。

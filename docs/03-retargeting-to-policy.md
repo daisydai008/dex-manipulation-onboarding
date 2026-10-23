@@ -1,6 +1,6 @@
 # 03 从 retargeted motion 到可执行策略
 
-> 本章回答：一段 retargeted 轨迹能当成什么（BC 数据 / tracking reference / reward 与 reset），以及为什么不能直接当 expert action。读完能判断你的人类运动数据走哪条用途、接触可行性是否过关。对应路线：路线 3（residual）与路线 4（人类运动数据）。
+> 本章回答：一段 retargeted 轨迹能当成什么（BC 数据 / tracking reference / reward 与 reset），以及为什么不能直接当 expert action。读完能判断一段人类运动数据走哪条用途、接触可行性是否过关。对应路线：路线 3（residual）与路线 4（人类运动数据）。
 
 Retargeting 输出不是最终闭环控制器，而是可能用于不同学习接口的 reference 或数据。[dexcap-2024](bibliography.md#dexcap-2024) 的 IK 与 imitation、[robotic-telekinesis-2022](bibliography.md#robotic-telekinesis-2022) 的平滑且无 self-collision trajectory、[deepmimic-2018](bibliography.md#deepmimic-2018) 的 motion-conditioned physics policy，分别覆盖链条的不同部分。
 

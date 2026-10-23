@@ -1,6 +1,6 @@
 # 04 On-policy diffusion 的概率与执行接口
 
-> 本章回答：on-policy diffusion 里 PPO 的 ratio 到底作用在哪个随机变量上、要记录什么、执行 mapping 怎么固定才不让推导失效。读完能判断你的 sampler 走 denoising-step 还是 exact-inversion、rollout 该存什么。对应路线：路线 1（固定 mapping 换 actor）与路线 2（denoising-step PPO）的数学契约。
+> 本章回答：on-policy diffusion 里 PPO 的 ratio 到底作用在哪个随机变量上、要记录什么、执行 mapping 怎么固定才不让推导失效。读完能判断给定 sampler 走 denoising-step 还是 exact-inversion、rollout 该存什么。对应路线：路线 1（固定 mapping 换 actor）与路线 2（denoising-step PPO）的数学契约。
 
 本章先定义 PPO 使用的随机变量，再讨论记录、优化与执行条件。下文的【条件推导】是自足的数学契约，不声称任意 diffusion sampler 可逆、可计算 Jacobian 或已有目标任务收益；有名称的方法只承担其自身证据范围内的主张，任务选择建议均标【机制相关】或【需新证据】。
 

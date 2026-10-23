@@ -1,6 +1,6 @@
 # 注释书目
 
-本文件是 36 篇入选作品（19 core、17 extended）的唯一逐篇注释位置；其他文档只通过稳定 paper ID 指向这里。除 [dppo-2024](#dppo-2024) 的机制说明来自指定全文版本外，其余条目的证据上限是所记录版本的 abstract 与公开元数据，超出该范围的分析明确标为【推测】。
+本文件是入选作品的唯一逐篇注释位置；其他文档只通过稳定 paper ID 指向这里。除 [dppo-2024](#dppo-2024) 的机制说明与七篇真机灵巧手 diffusion 部署条目（dexvla-2025、dexwild-2025、dexumi-2025、dexcast-2026、human2dex-2026、skillweave-2026、modex-2026）使用全文版本外，其余条目的证据上限是所记录版本的 abstract 与公开元数据，超出该范围的分析明确标为【推测】。书目不冻结，可经全文核实后新增。
 
 ## 证据约定
 
@@ -494,7 +494,7 @@
 ## dexwild-2025
 - paper-id：dexwild-2025
 - title：DexWild: Dexterous Human Interactions for In-the-Wild Robot Policies
-- authors-year：2025
+- authors-year：Tao 等，2025
 - arxiv：2505.07813v2
 - tier：extended
 - evidence：v2 abstract 与全文（policy class 节）
@@ -507,7 +507,7 @@
 ## dexumi-2025
 - paper-id：dexumi-2025
 - title：DexUMI: Using Human Hand as the Universal Manipulation Interface for Dexterous Manipulation
-- authors-year：2025
+- authors-year：Xu 等，2025
 - arxiv：2505.21864v3
 - tier：extended
 - evidence：v3 abstract 与全文（policy 节）

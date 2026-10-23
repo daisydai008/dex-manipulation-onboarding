@@ -240,9 +240,9 @@ def entry_budget(entries, seed=FROZEN_WORKS):
     actual = {e.get("paper-id"): e for e in entries}
     for pid, (version, tier) in seed.items():
         if pid not in actual:
-            errors.append("缺少冻结条目: " + pid)
+            errors.append("缺少锚定条目: " + pid)
         elif (actual[pid].get("arxiv"), actual[pid].get("tier")) != (version, tier):
-            errors.append("冻结身份/版本/tier 改变: " + pid)
+            errors.append("锚定身份/版本/tier 改变: " + pid)
     additions = set(actual) - set(seed)
     tiers = Counter(e.get("tier") for e in entries)
     return errors, len(additions)
@@ -684,10 +684,10 @@ def self_test():
     frozen = [{"paper-id": pid, "arxiv": version, "tier": tier}
               for pid, (version, tier) in FROZEN_WORKS.items()]
     check(entry_budget(frozen) == ([], 0), "approved 36 identities and 19/17 tiers")
-    check(any("缺少冻结条目" in e for e in entry_budget(frozen[1:])[0]), "deleted frozen ID")
+    check(any("缺少锚定条目" in e for e in entry_budget(frozen[1:])[0]), "deleted frozen ID")
     replaced = [dict(e) for e in frozen]
     replaced[0]["paper-id"] = "replacement-2024"
-    check(any("缺少冻结条目" in e for e in entry_budget(replaced)[0]), "replaced frozen ID")
+    check(any("缺少锚定条目" in e for e in entry_budget(replaced)[0]), "replaced frozen ID")
     for key, value in (("arxiv", "1808.00177v6"), ("tier", "extended")):
         changed = [dict(e) for e in frozen]
         changed[0][key] = value
