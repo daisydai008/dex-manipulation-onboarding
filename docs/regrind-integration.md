@@ -6,13 +6,13 @@
 
 REGRIND 的项目背景是 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练：先把人类运动转换成机器人参考轨迹，再通过交互学习修正执行中的偏差。这一描述沿用 [03 的项目背景](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)，不是对当前源码或部署状态的审计。
 
-参考轨迹贴合人类动作，不等于机器人能稳定完成接触任务。生成式策略可以用于学习控制修正量、生成连续多步动作，也可以作为训练扰动的候选模型；以下分别说明已有论文验证了什么，以及 REGRIND 仍需进行什么试验。
+参考轨迹贴合人类动作，不等于机器人能稳定完成接触任务。生成式策略可以用于学习控制修正量、生成连续多步动作，也可以作为训练扰动的候选模型；以下分别说明已有论文验证了什么，以及 REGRIND 仍需进行什么试验。本章只讨论方法接口，不含硬件选型、排期与分工，那些在 REGRIND 侧文档。
 
 ## 可插入生成式 actor 的三个接口
 
 ### 位置级 reference 之后的 residual
 
-Residual RL 用已有 controller 处理可建模的控制部分，再让 RL 学习修正量。[Residual RL](bibliography.md#residual-rl-2018) 在真机 block assembly 中验证了这种控制叠加；[MoDex](bibliography.md#modex-2026) 则提供 diffusion policy 经 DPPO fine-tuning 后 zero-shot 部署到 Allegro 的参照，但它的顺序抓取实验不是 residual 控制，也不是在真机上在线训练。
+Residual RL 用已有 controller 处理可建模的控制部分，再让 RL 学习修正量。[Residual RL](bibliography.md#residual-rl-2018) 在真机 block assembly 中验证了这种控制叠加；[MoDex](bibliography.md#modex-2026) 则提供 diffusion policy 经 DPPO fine-tuning 后 zero-shot 部署到 Allegro 的参照，但它的顺序抓取实验在本书目中未记录为 residual 控制，也不是在真机上在线训练。
 
 【推测】【需新证据】REGRIND 的适配假设是保留 reference 与 base controller，让生成式 actor 只输出 residual。试验应先记录 base-only 和 Gaussian residual 的结果，再比较生成式 residual，保持 reference、residual scale、执行限制和测试初始状态一致；同时记录任务成功率、修正幅度与饱和率，区分 reference 不可执行与 residual 控制不足。
 

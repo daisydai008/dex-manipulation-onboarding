@@ -75,7 +75,7 @@ Residual RL 不要求策略重新学习全部控制，而是在已有 controller
 
 ### 路线 4 · 没有现成策略、只有人类运动数据呢
 
-人类运动可以先转换成机器人学习所需的数据，再训练 diffusion policy。DexUMI 用外骨骼与视觉转换缩小人手和机器人手的差异，DexWild 联合人手与机器人数据训练策略；这里 diffusion 学的是动作，不能把整条数据转换过程都称为 diffusion。
+人类运动可以先转换成机器人学习所需的数据，再训练 diffusion policy。DexUMI 用外骨骼缩小人手和机器人手的运动学差距，DexWild 联合人手与机器人数据训练策略；这里 diffusion 学的是动作，不能把整条数据转换过程都称为 diffusion。
 
 数据扩增与候选生成是另一种用途。DexMimicGen 从少量示范合成仿真轨迹，但不是 diffusion 方法；DexDiffuser 则用 diffusion 生成候选 grasp，其抓取结果不能直接外推为连续的运动生成或闭环操作能力。
 
