@@ -564,7 +564,7 @@
 - tier：extended
 - evidence：v1 abstract 与全文（方法与真机部署节）
 - 解决什么问题：多物体顺序灵巧抓取，且需对 OOD 动作鲁棒。
-- 方法与信号是什么：diffusion policy 先 behavior cloning 预训练，再用 DPPO 在线 fine-tune；PointNet 与 context encoder 作为条件。
+- 方法与信号是什么：diffusion policy 先 behavior cloning 预训练，再用 DPPO 在仿真中 fine-tune；PointNet 与 context encoder 作为条件。
 - 验证到哪里及缺口：已覆盖证据：全文报告真机 Allegro Hand 上对 OOD 物体的 zero-shot 迁移，较仿真只有有限下降。 不支持的结论：灵巧手多指重定向未报告，任务是顺序抓取。
-- 对两类读者有什么用：【推测】它是最贴近本导读主线的证据：diffusion policy + DPPO on-policy fine-tune + 真机灵巧手，直接把路线 2 落到了硬件。
+- 对两类读者有什么用：【推测】它是最贴近本导读主线的证据：diffusion policy 经 DPPO 仿真 fine-tune 后 zero-shot 部署真机灵巧手，是路线 2 落地硬件的参照；但其 DPPO 更新不在真机上进行。
 - 主源：[arXiv v1](https://arxiv.org/abs/2606.05407v1)

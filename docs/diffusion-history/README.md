@@ -32,6 +32,6 @@ PPO 一类 on-policy 算法的 ratio 是 `exp(log qθ(a|c) − log qold(a|c))`�
 
 【需新证据】【推测】更具体地说，早期 diffusion 证据几乎没有落在真实多指灵巧手上：diffusion-policy-2023、diffusion-ql-2022、idql-2023 的 abstract 真机或仿真评估均不是多指灵巧手；dppo-2024 v3 全文为 locomotion / Franka Kitchen / Robomimic / Furniture-Bench 加 Furniture-Bench 的 zero-shot 真机转移，无灵巧手；dp3-2024 的 abstract 报告仿真与真机任务，但其灵巧手部分不在本仓库记录的 abstract 证据内。
 
-【需新证据】【推测】本导读经全文核实补入七篇真机灵巧手 diffusion 部署：imitation 路线的 [dexvla-2025](../bibliography.md#dexvla-2025)、[dexwild-2025](../bibliography.md#dexwild-2025)、[dexumi-2025](../bibliography.md#dexumi-2025)、[dexcast-2026](../bibliography.md#dexcast-2026)、[human2dex-2026](../bibliography.md#human2dex-2026)、[skillweave-2026](../bibliography.md#skillweave-2026)，以及最接近本主线的 [modex-2026](../bibliography.md#modex-2026)——它在真机 Allegro 上用 DPPO 对 diffusion policy 做在线 fine-tune。
+【需新证据】【推测】本导读经全文核实补入七篇真机灵巧手 diffusion 部署：imitation 路线的 [dexvla-2025](../bibliography.md#dexvla-2025)、[dexwild-2025](../bibliography.md#dexwild-2025)、[dexumi-2025](../bibliography.md#dexumi-2025)、[dexcast-2026](../bibliography.md#dexcast-2026)、[human2dex-2026](../bibliography.md#human2dex-2026)、[skillweave-2026](../bibliography.md#skillweave-2026)，以及最接近本主线的 [modex-2026](../bibliography.md#modex-2026)——它用 DPPO 对 diffusion policy 做仿真 fine-tune，并报告 Allegro 真机的 zero-shot 部署。
 
 【需新证据】【推测】但 MoDex 的任务是顺序多物体抓取，不是接触丰富的 in-hand 重定向。对做 on-policy diffusion 的读者，真正的空缺据此收窄为：把生成式 on-policy 更新用到接触丰富的 in-hand 灵巧操作真机上，这条组合仍无人占住。要落地最新部署时应另行检索并验证其手部形态与策略类型。
