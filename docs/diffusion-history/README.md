@@ -29,3 +29,5 @@ PPO 一类 on-policy 算法的 ratio 是 `exp(log qθ(a|c) − log qold(a|c))`�
 ## 尚未解决的灵巧手迁移缺口
 
 【需新证据】【推测】上述两条路线的验证主要来自 locomotion、Franka Kitchen、Robomimic、Furniture-Bench 等任务；灵巧手接触丰富、动作维数高、sim-to-real 间隙大，是否继承这些收益尚待验证。这正是本导读的四条起步路线要回答的：先在固定执行 mapping 下做 actor 隔离替换，再按瓶颈选择 denoising-step 或 exact-inversion，最后才谈真机。
+
+【需新证据】【推测】更具体地说，现有 diffusion 证据几乎没有落在真实多指灵巧手上。按本仓库文献范围核实：diffusion-policy-2023、diffusion-ql-2022、idql-2023 的 abstract 真机或仿真评估均不是多指灵巧手；dppo-2024 v3 全文为 locomotion / Franka Kitchen / Robomimic / Furniture-Bench 加 Furniture-Bench 的 zero-shot 真机转移，无灵巧手；dp3-2024 的 abstract 报告仿真与真机任务，但其灵巧手部分不在本仓库记录的 abstract 证据内。这意味着“diffusion 落在灵巧手”不是一个已有现成部署可照搬的问题，而是一个部署缺口——对做 on-policy diffusion 的读者，这恰恰是空缺点：灵巧手接触丰富、multimodal 动作显著，正是生成式策略理论上有优势、却尚无充分真机证据的场景。本仓库书目冻结为 36 篇、不收录专门面向灵巧手的 diffusion 部署工作，所以本节不逐一列出 2025 年后的新部署；要落地时应另行检索并验证其手部形态与策略类型。
