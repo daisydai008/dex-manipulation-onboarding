@@ -69,9 +69,11 @@ diffusion 也可以不在 actor 上，而在数据与运动生成一侧：把人
 
 ## 使用与证据约定
 
-文献库收录 36 篇作品，其中 19 篇 core、17 篇 extended；不要求全部先读。逐篇四问注释集中于 [bibliography](docs/bibliography.md)，主题章节负责跨文献综合，稳定 paper ID 不随标题或年份勘误变化。本仓库不包含训练代码，REGRIND 插入点均为待验证的适配假设。
+文献库收录 43 篇作品，其中 19 篇 core、24 篇 extended；不要求全部先读。逐篇四问注释集中于 [bibliography](docs/bibliography.md)，主题章节负责跨文献综合，稳定 paper ID 不随标题或年份勘误变化。书目不冻结，可经全文核实后新增。本仓库不包含训练代码，REGRIND 插入点均为待验证的适配假设。
 
-适配建议不等于已有实验结果。【论文直接验证】限定于所引论文实际机制、任务与指标；【机制相关】说明接口相关而非组合已验证；【需新证据】标出目标任务、硬件或组合尚待验证。除 DPPO v3 的指定全文外，其他论文仅使用所记录版本的 abstract 与公开元数据，越出该范围另标【推测】；"未报告"仅指本导读查阅的证据范围未报告。
+其中七篇是全文核实的真机灵巧手 diffusion 部署：[dexvla-2025](docs/bibliography.md#dexvla-2025)、[dexwild-2025](docs/bibliography.md#dexwild-2025)、[dexumi-2025](docs/bibliography.md#dexumi-2025)、[dexcast-2026](docs/bibliography.md#dexcast-2026)、[human2dex-2026](docs/bibliography.md#human2dex-2026)、[skillweave-2026](docs/bibliography.md#skillweave-2026) 走 imitation 路线，[modex-2026](docs/bibliography.md#modex-2026) 在真机 Allegro 上用 DPPO 对 diffusion policy 在线 fine-tune。它们证明 diffusion 能上真机灵巧手，但除 MoDex 外都不碰 on-policy ratio；on-policy diffusion 在接触丰富的 in-hand 真机上仍是空缺。
+
+适配建议不等于已有实验结果。【论文直接验证】限定于所引论文实际机制、任务与指标；【机制相关】说明接口相关而非组合已验证；【需新证据】标出目标任务、硬件或组合尚待验证。除 DPPO v3 的指定全文外，其他论文仅使用所记录版本的 abstract 与公开元数据，越出该范围另标【推测】；“未报告”仅指本导读查阅的证据范围未报告。
 
 推导与工程事实另列证据类别。【条件推导】只在列明前提下成立，不代表任意 diffusion sampler 满足条件或已取得收益；【官方工程文档】只支持固定版本的 registry/interface 事实，不支持 actor-gain 结论。完整约定见 [书目证据说明](docs/bibliography.md#证据约定)。
 
@@ -85,12 +87,12 @@ diffusion 也可以不在 actor 上，而在数据与运动生成一侧：把人
 - [04 On-policy diffusion 接口](docs/04-onpolicy-diffusion-interface.md)：定义概率对象、rollout 记录、执行 mapping 与诊断任务协议。
 - [05 PPO 增强](docs/05-ppo-enhancement.md)：从失败信号选择排查项，设计隔离实验。
 - [diffusion 历史](docs/diffusion-history/README.md)：生成式策略接入 on-policy RL 的展开梳理。
-- [注释书目](docs/bibliography.md)：维护 36 篇作品的身份、版本、证据与四问。
+- [注释书目](docs/bibliography.md)：维护 43 篇作品的身份、版本、证据与四问。
 - [检查器](scripts/check_links.py)：检查交付文件的结构、条目、相对链接、机械风格及外部来源。
 
 ## 检查与接受范围
 
-检查器只用 Python 标准库，不写 cache、日志或 fixture。交付文件清单显式登记在 `scripts/check_links.py` 的 `FILES` 集合，新文件须登记加入，编辑器与运行时辅助文件（如 `.vscode/`、`.pi-subagents/`、`.gitignore`）不属于交付树，运行检查前须从树中删除，本地忽略规则放全局 gitignore 或 `.git/info/exclude`。`--lint` 不联网，按内嵌身份映射要求 36 条、19 core、17 extended、新增 0；完整模式核验记录版本的 arXiv API title/ID、书目外链、全部交付 Markdown 中的官方工程文档链接与内部 anchor。网络请求单次 15 秒、至多重试 2 次、同 host 间隔至少 1 秒、总联网预算 15 分钟；退出码为 0 全部通过、2 内容失败、3 网络未完成，内容失败优先，只有 failed=0 且 unverified=0 才通过。
+检查器只用 Python 标准库，不写 cache、日志或 fixture。交付文件清单显式登记在 `scripts/check_links.py` 的 `FILES` 集合，新文件须登记加入，编辑器与运行时辅助文件（如 `.vscode/`、`.pi-subagents/`、`.gitignore`）不属于交付树，运行检查前须从树中删除，本地忽略规则放全局 gitignore 或 `.git/info/exclude`。`--lint` 不联网，按内嵌身份映射锚定原有 36 篇 core/extended 身份，新增条目经登记与 arXiv 核验后接受（当前 43 条、19 core、24 extended）；完整模式核验记录版本的 arXiv API title/ID、书目外链、全部交付 Markdown 中的官方工程文档链接与内部 anchor。网络请求单次 15 秒、至多重试 2 次、同 host 间隔至少 1 秒、总联网预算 15 分钟；退出码为 0 全部通过、2 内容失败、3 网络未完成，内容失败优先，只有 failed=0 且 unverified=0 才通过。
 
 ```bash
 python3 scripts/check_links.py --self-test
