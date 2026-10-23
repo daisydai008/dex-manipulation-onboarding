@@ -1,12 +1,19 @@
 # Dexterous manipulation × on-policy diffusion 导读
 
-这份导读面向熟悉 diffusion 理论、正寻找 dexterous hand 落地场景的读者。它支持一个决定：on-policy diffusion 工作可以落在灵巧操作的哪个接口上。它不管排期、分工、硬件预算与真机部署细节，那些属于 REGRIND 侧的执行文档。
+这份导读面向学过 RL、希望把 diffusion 用到灵巧手上的读者。重点是已有研究怎样处理动作学习、接触控制与示范数据，以及这些方法能支持什么实验；REGRIND 的具体尝试另见 [对接思路](docs/regrind-integration.md)。
 
 ## 背景
 
-灵巧操作的核心难点是接触丰富、部分可观测、且任务间动作语义不统一。In-hand reorientation、grasp acquisition、arm-hand 协同、双手、long-horizon 是五个不同问题，不能按手的自由度或算法名称横向比较；观测侧要分别记录视觉、proprioception、tactile 与 privileged simulator state，部署时拿不到训练用的 privileged state 就必须另补 state estimator。这一侧的任务划分与证据见 [01 问题结构](docs/01-problem-structure.md)。
+灵巧操作不只是把物体抓起来，还包括在手中转动物体、协调手臂与手指、连续完成多个操作阶段。这些任务的初始接触、可用观测和动作接口不同，不能只按手的自由度或算法名称比较；任务实例与文献见 [01 问题结构](docs/01-problem-structure.md)。
 
-生成式策略接入 on-policy RL 的主线，是把 multimodal 动作分布的表达能力带进 PPO 一类需要逐样本 log-likelihood 的更新里。条件动作生成（diffusion-policy-2023）先解决 imitation 侧的表达；offline 价值引导（diffusion-ql-2022、idql-2023）把 diffusion 用进 RL 但不碰 on-policy ratio；denoising-step PPO（dppo-2024）绕开最终动作的边缘密度，在扩展 state 上对每步 denoising 求 likelihood；再往前是与 DPPO 并列的 exact-inversion 一类：正面恢复最终动作的精确 log-likelihood。本导读不复述这条线，只把它作为对照面。完整的历史展开见 [docs/diffusion-history](docs/diffusion-history/README.md)。
+Diffusion 在机器人学习中的用途，可以按“从哪里学习动作、怎样继续改进”来区分：
+
+- **从示范学习动作**：给定相机观测，让模型学习示范中可能出现的动作序列，而不是为每种情况手写控制规则（条件动作生成；[Diffusion Policy](docs/bibliography.md#diffusion-policy-2023)）。
+- **从已有数据学习高回报动作**：既学习数据里的动作，又利用价值估计偏向更有希望获得回报的动作，不依赖持续采集新交互（offline RL；[Diffusion-QL](docs/bibliography.md#diffusion-ql-2022)、[IDQL](docs/bibliography.md#idql-2023)）。
+- **通过交互改进预训练策略**：把生成动作的去噪过程拆成可更新的步骤，用新交互得到的奖励继续训练，不必直接算出最终动作的概率密度（denoising-step PPO；[DPPO](docs/bibliography.md#dppo-2024)）。
+- **用可逆生成过程计算概率**：在生成过程满足可逆、密度可计算等条件时，反推出某个采样变量是怎样生成的，从而计算 PPO 更新所需的概率比；该变量不一定就是机器人执行的命令（exact-inversion；[04 概率对象](docs/04-onpolicy-diffusion-interface.md#概率对象)）。
+
+这些用途可以组合，不是必须依次采用的阶段。方法之间的区别与历史展开见 [diffusion 历史](docs/diffusion-history/README.md)。
 
 ## 关键术语
 
@@ -21,83 +28,80 @@
 
 ## 起步路线
 
-四条路线各自回答一个问题（与 [02](docs/02-method-landscape.md) 按资源盘点的三条起步路线不同维度），每条给出前置、第一步、预期产出、停止条件，并标注支撑文献。均为【机制相关】【需新证据】的实验建议，不是训练收益承诺；具体选型与失败信号排查见 [02 决策支持](docs/02-method-landscape.md)。
+灵巧操作中的 RL 实验要分别处理动作表示、策略更新、接触执行和数据来源。下面按这四类问题介绍已有方法，再给出可尝试的实验。
+
+```text
+动作表示：同一观测下有多种可行动作 -> 路线 1：比较 Gaussian 与生成式 actor
+策略更新：生成动作后如何利用奖励改进 -> 路线 2：denoising-step PPO
+接触执行：参考轨迹不能消除执行误差 -> 路线 3：base controller + residual
+数据来源：缺少机器人示范、只有人类运动 -> 路线 4：运动映射、数据扩增与模仿学习
+```
 
 ### 路线 1 · on-policy diffusion 能直接在灵巧手上跑吗
 
-能，但先在固定执行 mapping 下做 actor 替换，把概率对象按 [04](docs/04-onpolicy-diffusion-interface.md#概率对象) 的条件推导约定清楚，再谈收益。
+生成式 actor 用来表达同一观测下多种合理的动作选择。Diffusion Policy 在示范学习中使用这一表示；把它用于 on-policy RL，还需要解决新旧策略怎样比较同一动作的问题，因此不能把 imitation 的结果直接当作 PPO 收益。
 
-- 前置：可复现 simulator、reward/reset、已一致的 Gaussian PPO baseline。
-- 第一步：只替换 actor 为生成式策略，rollout schema、reward、观测、seed 全部冻结。
-- 预期产出：与 baseline 归因隔离的 actor 对照（成功率、KL/clip fraction、latency）。
-- 停止条件：log-prob 对不上、或 inference latency 超出控制周期预算。
-- 支撑：[ppo-2017](docs/bibliography.md#ppo-2017)、[implementation-matters-2020](docs/bibliography.md#implementation-matters-2020)、[dppo-2024](docs/bibliography.md#dppo-2024)。
+【需新证据】适合先研究的问题是：任务、数据与训练预算一致时，更换动作表示能否改善灵巧手的闭环成功率。概率计算与执行命令的区分见 [04](docs/04-onpolicy-diffusion-interface.md#概率对象)。
+
+- 前置：可复现的仿真任务、成功判据与 Gaussian PPO baseline，以及候选 actor 的概率计算方法。
+- 第一步：保持奖励、观测、动作含义和测试初始状态一致，更换 actor，并配套实现所需的采样记录与更新；若更新方法也改变，结果归因于组合而非 actor 单项。
+- 预期产出：成功率、掉落率、交互量、训练时间与推理延迟的对照结果。
+- 停止条件：同一采样变量的旧 log-prob 无法重算一致，或推理延迟超过控制周期预算。
+- 支撑：[Diffusion Policy](docs/bibliography.md#diffusion-policy-2023) 提供动作表示参照；[Implementation Matters](docs/bibliography.md#implementation-matters-2020) 说明为何必须控制实现差异。
 
 ### 路线 2 · 没有精确 log-likelihood 怎么办
 
-用 DPPO 式：不需求最终 action chunk 的边缘密度，在扩展 state 上对每步 denoising 的 Gaussian transition 求 likelihood 形成 PPO ratio。这与 exact-inversion 路线互为对照——一个绕开边缘密度，一个正面恢复它。
+DPPO 把难以直接求解的最终动作概率，改成逐步计算去噪动作的概率，再用环境奖励更新策略。它通常从示范预训练出发；MoDex 将这套 fine-tuning 方法用于顺序多物体抓取，并报告 Allegro 真机的 zero-shot 部署，不是在真机上在线训练。
 
-- 前置：成功 demonstrations 用于预训练、可交互环境、可重建 denoising trajectory 的记录。
-- 第一步：按 [04 rollout 记录](docs/04-onpolicy-diffusion-interface.md#rollout-记录) 存扩展 state 的逐步 likelihood，再做 demonstration fine-tuning。
-- 预期产出：demo 初始化的 on-policy fine-tuning 闭环与样本复杂度记录。
-- 停止条件：训练/部署数据版本失配，或逐步 likelihood 无法重算。
-- 支撑：[dppo-2024](docs/bibliography.md#dppo-2024)、[diffusion-policy-2023](docs/bibliography.md#diffusion-policy-2023)。
+【需新证据】这条路线适合检验示范策略能否通过交互学习改善失败恢复或任务成功率；已有抓取结果不能代替 in-hand 重定向的实验。
+
+- 前置：可用于预训练的成功 demonstrations、可交互环境，以及能重建去噪过程的记录。
+- 第一步：先测预训练策略，再加入 DPPO 更新；按 [04 Rollout 记录](docs/04-onpolicy-diffusion-interface.md#rollout-记录) 保存逐步概率求值所需的信息。
+- 预期产出：fine-tuning 前后的成功率、恢复行为与交互量，以及新增训练开销。
+- 停止条件：逐步 likelihood 无法重算，或预训练数据与环境的观测、动作定义不一致。
+- 支撑：[DPPO](docs/bibliography.md#dppo-2024) v3 §4–5 提供更新方法与实验；[MoDex](docs/bibliography.md#modex-2026) 提供顺序抓取与真机部署参照。
 
 ### 路线 3 · 已经有 retargeting 或 base controller 了呢
 
-让生成式 actor 只学 residual，base controller 固定不动。这把"生成式策略的表达"和"底层控制的可行性"解耦，也最贴近 retargeting 场景。
+Residual RL 不要求策略重新学习全部控制，而是在已有 controller 输出上叠加修正量，用来处理接触、摩擦等模型误差。Residual RL 的真机 block assembly 支持这种分工；DeepMimic 则说明运动跟踪目标可以与任务目标组合，但两者都不能直接证明生成式 residual 对灵巧手有效。
 
-- 前置：reference 物理可行、base controller 能独立闭环、residual scale 冻结。
-- 第一步：固定 base 与执行 mapping，用生成式 residual 替换 Gaussian residual，保留 policy 的原始 auxiliary action。
-- 预期产出：控制分工与 residual 作用范围、饱和率。
-- 停止条件：base-only 已失稳、或 reference 本身不可行（先修接口，不用 actor 掩盖）。
-- 支撑：[residual-rl-2018](docs/bibliography.md#residual-rl-2018)、[deepmimic-2018](docs/bibliography.md#deepmimic-2018)、[demostart-2024](docs/bibliography.md#demostart-2024)。
+【推测】【需新证据】Retargeting 场景可以据此比较 Gaussian residual 与生成式 residual，检验修正动作的表示是否影响接触稳定性，而不是直接把参考轨迹当作成功动作。
+
+- 前置：reference 可执行、base controller 能独立闭环，且 residual scale 与执行限制已明确。
+- 第一步：先记录 base-only 和 Gaussian residual，再在相同 reference 与 controller 下比较生成式 residual，保留 policy 原始采样动作。
+- 预期产出：任务成功率、跟踪误差、residual 幅度与饱和率，区分控制修正和 reference 本身的问题。
+- 停止条件：base-only 已失稳或 reference 不可执行；此时先检查接触与控制配置。
+- 支撑：[Residual RL](docs/bibliography.md#residual-rl-2018) 提供控制叠加的实验；[DeepMimic](docs/bibliography.md#deepmimic-2018) 提供运动模仿与任务目标组合的参照。
 
 ### 路线 4 · 没有现成策略、只有人类运动数据呢
 
-diffusion 也可以不在 actor 上，而在数据与运动生成一侧：把人类视频 / mocap 变成 policy-ready 的 reference 或 demonstration。这是把生成模型当作数据扩增与 retargeting 工具，而非策略参数化。
+人类运动可以先转换成机器人学习所需的数据，再训练 diffusion policy。DexUMI 用外骨骼与视觉转换缩小人手和机器人手的差异，DexWild 联合人手与机器人数据训练策略；这里 diffusion 学的是动作，不能把整条数据转换过程都称为 diffusion。
 
-- 前置：人类运动或视频记录、跨 embodiment 对齐手段、接触可行性校验。
-- 第一步：生成 / retarget 候选轨迹，先做动力学与接触可行性筛选，再决定用作 BC、tracking 还是 reset。
-- 预期产出：可执行 reference 的可行率与覆盖、以及它们的下游用途分类。
-- 停止条件：接触可行性筛选通过率过低，或生成轨迹与真实接触分布系统性失配。
-- 支撑：[dexcap-2024](docs/bibliography.md#dexcap-2024)、[robotic-telekinesis-2022](docs/bibliography.md#robotic-telekinesis-2022)、[dexmimicgen-2024](docs/bibliography.md#dexmimicgen-2024)、[dexdiffuser-2023](docs/bibliography.md#dexdiffuser-2023)。
+数据扩增与候选生成是另一种用途。DexMimicGen 从少量示范合成仿真轨迹，但不是 diffusion 方法；DexDiffuser 则用 diffusion 生成候选 grasp，其抓取结果不能直接外推为连续的运动生成或闭环操作能力。
 
-## 对接 REGRIND
-
-以下是把生成式 actor 插进 REGRIND 当前 retargeting 管线的候选接口，全部为【推测】【需新证据】的适配假设，不是代码审计或训练结果。REGRIND 侧是 Drake 位置级 retargeting 加 residual RL 加 Isaac 并行训练；三个可插入位置是：位置级 reference 导出之后的 residual（对应路线 3）、多步 action chunk 的生成（对应路线 1/2 的 horizon 选择）、以及部署噪声模型标定时的扰动生成。这些接口的具体概率约定与记录要求见 [04](docs/04-onpolicy-diffusion-interface.md#固定执行-mapping) 与 [03](docs/03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。本节不含硬件、排期与分工，那些在 REGRIND 侧文档。
+- 前置：人类运动或视频记录、机器人形态映射，以及动作执行与接触检查方法。
+- 第一步：先判断数据适合作为动作监督、tracking reference 还是 reset，再测试 imitation 闭环；若尝试生成候选动作，先验证其可执行性。
+- 预期产出：可用数据覆盖、候选动作可行率与下游策略成功率，分别评估数据处理和策略学习的贡献。
+- 停止条件：无法得到同步观测与有效动作，或候选动作不能完成所需接触。
+- 支撑：[DexUMI](docs/bibliography.md#dexumi-2025)、[DexWild](docs/bibliography.md#dexwild-2025) 展示人类数据到 diffusion policy；[DexMimicGen](docs/bibliography.md#dexmimicgen-2024)、[DexDiffuser](docs/bibliography.md#dexdiffuser-2023) 分别提供轨迹合成与 grasp 生成参照。
 
 ## 使用与证据约定
 
-文献库收录 43 篇作品，其中 19 篇 core、24 篇 extended；不要求全部先读。逐篇四问注释集中于 [bibliography](docs/bibliography.md)，主题章节负责跨文献综合，稳定 paper ID 不随标题或年份勘误变化。书目不冻结，可经全文核实后新增。本仓库不包含训练代码，REGRIND 插入点均为待验证的适配假设。
+书目中的真机灵巧手 diffusion 工作覆盖了不同的数据与控制方式：[DexVLA](docs/bibliography.md#dexvla-2025) 研究跨形态动作学习，[DexWild](docs/bibliography.md#dexwild-2025)、[DexUMI](docs/bibliography.md#dexumi-2025)、[DexCast](docs/bibliography.md#dexcast-2026)、[Human2Dex](docs/bibliography.md#human2dex-2026) 利用人类示范训练策略，[SkillWeave](docs/bibliography.md#skillweave-2026) 组合多个技能。
 
-其中七篇是全文核实的真机灵巧手 diffusion 部署：[dexvla-2025](docs/bibliography.md#dexvla-2025)、[dexwild-2025](docs/bibliography.md#dexwild-2025)、[dexumi-2025](docs/bibliography.md#dexumi-2025)、[dexcast-2026](docs/bibliography.md#dexcast-2026)、[human2dex-2026](docs/bibliography.md#human2dex-2026)、[skillweave-2026](docs/bibliography.md#skillweave-2026) 走 imitation 路线，[modex-2026](docs/bibliography.md#modex-2026) 在真机 Allegro 上用 DPPO 对 diffusion policy 在线 fine-tune（其任务是顺序多物体抓取，不是接触丰富的 in-hand 重定向）。它们证明 diffusion 能上真机灵巧手，但除 MoDex 外都不碰 on-policy ratio；on-policy diffusion 在接触丰富的 in-hand 真机上仍是空缺。
+[MoDex](docs/bibliography.md#modex-2026) 进一步使用 DPPO fine-tuning，并报告顺序抓取策略在 Allegro 上的 zero-shot 部署，这与在真机上在线训练或完成 in-hand 重定向不是同一结果。
 
-适配建议不等于已有实验结果。【论文直接验证】限定于所引论文实际机制、任务与指标；【机制相关】说明接口相关而非组合已验证；【需新证据】标出目标任务、硬件或组合尚待验证。除 DPPO v3 的指定全文与七篇真机灵巧手 diffusion 部署条目外，其他论文仅使用所记录版本的 abstract 与公开元数据，越出该范围另标【推测】；“未报告”仅指本导读查阅的证据范围未报告。
-
-推导与工程事实另列证据类别。【条件推导】只在列明前提下成立，不代表任意 diffusion sampler 满足条件或已取得收益；【官方工程文档】只支持固定版本的 registry/interface 事实，不支持 actor-gain 结论。完整约定见 [书目证据说明](docs/bibliography.md#证据约定)。
+【论文直接验证】指所引论文实际做过的实验；【机制相关】表示方法可作参照；【需新证据】与【推测】标出尚待检验的应用或解释，各篇的具体实验范围见 [注释书目](docs/bibliography.md#证据约定)。
 
 ## 文件导航
 
-按处境选读，不必全读。想直接选方向：读本 README 的四条路线，再按路线跳到对应章节。关心某条路线的数学/接口约束：路线 1、2 看 [04](docs/04-onpolicy-diffusion-interface.md)，路线 3、4 看 [03](docs/03-retargeting-to-policy.md)。需要选方法族或排查失败：看 [02](docs/02-method-landscape.md) 与 [05](docs/05-ppo-enhancement.md)。要查证某篇论文的证据范围：查 [bibliography](docs/bibliography.md)。想了解 diffusion 接入 on-policy RL 的来龙去脉：看 [diffusion 历史](docs/diffusion-history/README.md)。
+按当前问题选读：先用 01 明确任务，再从 02 选择方法；已有方向时可直接读对应专题。
 
-- [01 问题结构](docs/01-problem-structure.md)：确定任务、观测与 benchmark 比较口径。
-- [02 方法选择](docs/02-method-landscape.md)：按资源和可观察失败信号选择五族候选。
-- [03 Retargeting 到 policy](docs/03-retargeting-to-policy.md)：检查轨迹用途、接触可行性与执行数据契约。
-- [04 On-policy diffusion 接口](docs/04-onpolicy-diffusion-interface.md)：定义概率对象、rollout 记录、执行 mapping 与诊断任务协议。
-- [05 PPO 增强](docs/05-ppo-enhancement.md)：从失败信号选择排查项，设计隔离实验。
-- [diffusion 历史](docs/diffusion-history/README.md)：生成式策略接入 on-policy RL 的展开梳理。
-- [注释书目](docs/bibliography.md)：维护 43 篇作品的身份、版本、证据与四问。
-- [检查器](scripts/check_links.py)：检查交付文件的结构、条目、相对链接、机械风格及外部来源。
-
-## 检查与接受范围
-
-检查器只用 Python 标准库，不写 cache、日志或 fixture。交付文件清单显式登记在 `scripts/check_links.py` 的 `FILES` 集合，新文件须登记加入，编辑器与运行时辅助文件（如 `.vscode/`、`.pi-subagents/`、`.gitignore`）不属于交付树，运行检查前须从树中删除，本地忽略规则放全局 gitignore 或 `.git/info/exclude`。`--lint` 不联网，按内嵌身份映射锚定原有 36 篇 core/extended 身份，新增条目经登记与 arXiv 核验后接受（当前 43 条、19 core、24 extended）；完整模式核验记录版本的 arXiv API title/ID、书目外链、全部交付 Markdown 中的官方工程文档链接与内部 anchor。网络请求单次 15 秒、至多重试 2 次、同 host 间隔至少 1 秒、总联网预算 15 分钟；退出码为 0 全部通过、2 内容失败、3 网络未完成，内容失败优先，只有 failed=0 且 unverified=0 才通过。
-
-```bash
-python3 scripts/check_links.py --self-test
-python3 scripts/check_links.py --lint
-python3 scripts/check_links.py
-```
-
-自动检查通过不等于内容接受。条件推导、DPPO 机制与选型建议仍需人工核对；执行者交回与独立内容核验分开，不以链接可达代替技术判断。
+- [01 问题结构](docs/01-problem-structure.md)：确定灵巧手任务、观测与硬件条件，或比较不同论文实验设置时读。
+- [02 方法选择](docs/02-method-landscape.md)：资源已明确，但还未确定先做 imitation、RL 还是组合方案时读。
+- [03 Retargeting 到 policy](docs/03-retargeting-to-policy.md)：已有运动轨迹，需要判断怎样用于训练、怎样检查接触可行性时读。
+- [04 On-policy diffusion 接口](docs/04-onpolicy-diffusion-interface.md)：准备实现路线 1、2，或核对 residual 的概率与执行记录时读。
+- [05 PPO 增强](docs/05-ppo-enhancement.md)：已有训练结果，需要定位失败原因或设计隔离实验时读。
+- [Diffusion 历史](docs/diffusion-history/README.md)：需要进一步区分 imitation、offline RL 与 on-policy 方法时读。
+- [REGRIND 对接思路](docs/regrind-integration.md)：需要把生成式策略用于 REGRIND 的 reference、residual 或部署扰动试验时读；文末附仓库维护检查。
+- [注释书目](docs/bibliography.md)：需要查某篇论文解决的问题、所做实验与原文来源时读。
