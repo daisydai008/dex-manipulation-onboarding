@@ -1,6 +1,6 @@
 # 生成式策略接入 on-policy RL 的历史线
 
-本文件展开 README 背景节的第二段，供需要完整历史脉络的读者。它只覆盖"如何把 diffusion/flow 一类生成模型用进需要逐样本 log-likelihood 的 on-policy 更新"这条线，不做整个 diffusion-RL 的综述。所有文献身份、版本与证据边界以 [../bibliography](../bibliography.md) 为准；除 dppo-2024 的指定全文外，其余仅到所记录版本的 abstract，越出另标【推测】。
+本文件展开 README 背景节的第二段，供需要完整历史脉络的读者。它只覆盖"如何把 diffusion/flow 一类生成模型用进需要逐样本 log-likelihood 的 on-policy 更新"这条线，不做整个 diffusion-RL 的综述。所有文献身份、版本与所据证据以 [../bibliography](../bibliography.md) 为准；除 dppo-2024 的指定全文外，其余仅到所记录版本的 abstract，越出另标【推测】。
 
 ## 起点：条件动作生成
 
@@ -24,7 +24,7 @@ PPO 一类 on-policy 算法的 ratio 是 `exp(log qθ(a|c) − log qold(a|c))`�
 
 ## 两条路线的对照
 
-【机制相关】路线一以"换一个随机变量"回避边缘密度，工程上更通用，但 ratio 作用在去噪链而非最终动作；路线二保留"最终动作"作为概率对象，理论上更直接，但把难度转移到了可逆性与精确求逆上。选哪条不取决于哪个更新潮，而取决于你的 sampler 是否可逆、能否承受求逆/ Jacobian 的计算，以及 rollout 记录愿意承担多大开销。两条路的隔离评估口径见 [05 更换 actor 与 likelihood 对象](../05-ppo-enhancement.md#更换-actor-与-likelihood-对象)。
+【机制相关】路线一以"换一个随机变量"回避边缘密度，工程上更通用，但 ratio 作用在去噪链而非最终动作；路线二保留"最终动作"作为概率对象，理论上更直接，但把难度转移到了可逆性与精确求逆上。选哪条不取决于哪个更新潮，而取决于 sampler 是否可逆、能否承受求逆/ Jacobian 的计算，以及 rollout 记录愿意承担多大开销。两条路的隔离评估口径见 [05 更换 actor 与 likelihood 对象](../05-ppo-enhancement.md#更换-actor-与-likelihood-对象)。
 
 ## 尚未解决的灵巧手迁移缺口
 

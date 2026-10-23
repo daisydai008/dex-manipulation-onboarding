@@ -1,12 +1,12 @@
 # Dexterous manipulation × on-policy diffusion 导读
 
-这份导读写给熟悉 diffusion 理论、正寻找 dexterous hand 落地场景的读者。它支持一个决定：你的 on-policy diffusion 工作可以落在灵巧操作的哪个接口上。它不管排期、分工、硬件预算与真机部署细节，那些属于 REGRIND 侧的执行文档。
+这份导读面向熟悉 diffusion 理论、正寻找 dexterous hand 落地场景的读者。它支持一个决定：on-policy diffusion 工作可以落在灵巧操作的哪个接口上。它不管排期、分工、硬件预算与真机部署细节，那些属于 REGRIND 侧的执行文档。
 
 ## 背景
 
-灵巧操作的核心难点是接触丰富、部分可观测、且任务间动作语义不统一。In-hand reorientation、grasp acquisition、arm-hand 协同、双手、long-horizon 是五个不同问题，不能按手的自由度或算法名称横向比较；观测侧要分别记录视觉、proprioception、tactile 与 privileged simulator state，部署时拿不到训练用的 privileged state 就必须另补 state estimator。这一侧的任务边界与证据见 [01 问题结构](docs/01-problem-structure.md)。
+灵巧操作的核心难点是接触丰富、部分可观测、且任务间动作语义不统一。In-hand reorientation、grasp acquisition、arm-hand 协同、双手、long-horizon 是五个不同问题，不能按手的自由度或算法名称横向比较；观测侧要分别记录视觉、proprioception、tactile 与 privileged simulator state，部署时拿不到训练用的 privileged state 就必须另补 state estimator。这一侧的任务划分与证据见 [01 问题结构](docs/01-problem-structure.md)。
 
-生成式策略接入 on-policy RL 的主线，是把 multimodal 动作分布的表达能力带进 PPO 一类需要逐样本 log-likelihood 的更新里。条件动作生成（diffusion-policy-2023）先解决 imitation 侧的表达；offline 价值引导（diffusion-ql-2022、idql-2023）把 diffusion 用进 RL 但不碰 on-policy ratio；denoising-step PPO（dppo-2024）绕开最终动作的边缘密度，在扩展 state 上对每步 denoising 求 likelihood；再往前是与 DPPO 并列的 exact-inversion 一类：正面恢复最终动作的精确 log-likelihood——这条线正是你所在实验室的方向，本导读不复述，只把它作为对照面。完整的历史展开见 [docs/diffusion-history](docs/diffusion-history/README.md)。
+生成式策略接入 on-policy RL 的主线，是把 multimodal 动作分布的表达能力带进 PPO 一类需要逐样本 log-likelihood 的更新里。条件动作生成（diffusion-policy-2023）先解决 imitation 侧的表达；offline 价值引导（diffusion-ql-2022、idql-2023）把 diffusion 用进 RL 但不碰 on-policy ratio；denoising-step PPO（dppo-2024）绕开最终动作的边缘密度，在扩展 state 上对每步 denoising 求 likelihood；再往前是与 DPPO 并列的 exact-inversion 一类：正面恢复最终动作的精确 log-likelihood。本导读不复述这条线，只把它作为对照面。完整的历史展开见 [docs/diffusion-history](docs/diffusion-history/README.md)。
 
 ## 关键术语
 
@@ -21,9 +21,9 @@
 
 ## 起步路线
 
-四条路线各自回答一个你可能问的问题（与 [02](docs/02-method-landscape.md) 按资源盘点的三条起步路线不同维度），每条给出前置、第一步、预期产出、停止条件，并标注支撑文献。均为【机制相关】【需新证据】的实验建议，不是训练收益承诺；具体选型与失败信号排查见 [02 决策支持](docs/02-method-landscape.md)。
+四条路线各自回答一个问题（与 [02](docs/02-method-landscape.md) 按资源盘点的三条起步路线不同维度），每条给出前置、第一步、预期产出、停止条件，并标注支撑文献。均为【机制相关】【需新证据】的实验建议，不是训练收益承诺；具体选型与失败信号排查见 [02 决策支持](docs/02-method-landscape.md)。
 
-### 路线 1 · 我的 on-policy diffusion 能直接在灵巧手上跑吗
+### 路线 1 · on-policy diffusion 能直接在灵巧手上跑吗
 
 能，但先在固定执行 mapping 下做 actor 替换，把概率对象按 [04](docs/04-onpolicy-diffusion-interface.md#概率对象) 的条件推导约定清楚，再谈收益。
 
@@ -48,8 +48,8 @@
 让生成式 actor 只学 residual，base controller 固定不动。这把"生成式策略的表达"和"底层控制的可行性"解耦，也最贴近 retargeting 场景。
 
 - 前置：reference 物理可行、base controller 能独立闭环、residual scale 冻结。
-- 第一步：固定 base 与执行 mapping，用生成式 residual 替换 Gaussian residual，保留 policy 原始随机动作。
-- 预期产出：控制分工边界、residual 作用范围与饱和率。
+- 第一步：固定 base 与执行 mapping，用生成式 residual 替换 Gaussian residual，保留 policy 的原始 auxiliary action。
+- 预期产出：控制分工与 residual 作用范围、饱和率。
 - 停止条件：base-only 已失稳、或 reference 本身不可行（先修接口，不用 actor 掩盖）。
 - 支撑：[residual-rl-2018](docs/bibliography.md#residual-rl-2018)、[deepmimic-2018](docs/bibliography.md#deepmimic-2018)、[demostart-2024](docs/bibliography.md#demostart-2024)。
 
@@ -65,7 +65,7 @@ diffusion 也可以不在 actor 上，而在数据与运动生成一侧：把人
 
 ## 对接 REGRIND
 
-以下是把生成式 actor 插进我当前 retargeting 管线的候选接口，全部为【推测】【需新证据】的适配假设，不是代码审计或训练结果。REGRIND 侧是 Drake 位置级 retargeting 加 residual RL 加 Isaac 并行训练；三个可插入位置是：位置级 reference 导出之后的 residual（对应路线 3）、多步 action chunk 的生成（对应路线 1/2 的 horizon 选择）、以及部署噪声模型标定时的扰动生成。这些接口的具体概率约定与记录要求见 [04](docs/04-onpolicy-diffusion-interface.md#固定执行-mapping) 与 [03](docs/03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。本节不含硬件、排期与分工，那些在 REGRIND 侧文档。
+以下是把生成式 actor 插进 REGRIND 当前 retargeting 管线的候选接口，全部为【推测】【需新证据】的适配假设，不是代码审计或训练结果。REGRIND 侧是 Drake 位置级 retargeting 加 residual RL 加 Isaac 并行训练；三个可插入位置是：位置级 reference 导出之后的 residual（对应路线 3）、多步 action chunk 的生成（对应路线 1/2 的 horizon 选择）、以及部署噪声模型标定时的扰动生成。这些接口的具体概率约定与记录要求见 [04](docs/04-onpolicy-diffusion-interface.md#固定执行-mapping) 与 [03](docs/03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。本节不含硬件、排期与分工，那些在 REGRIND 侧文档。
 
 ## 使用与证据约定
 
@@ -77,7 +77,7 @@ diffusion 也可以不在 actor 上，而在数据与运动生成一侧：把人
 
 ## 文件导航
 
-- [01 问题结构](docs/01-problem-structure.md)：确定任务、观测与 benchmark 比较边界。
+- [01 问题结构](docs/01-problem-structure.md)：确定任务、观测与 benchmark 比较口径。
 - [02 方法选择](docs/02-method-landscape.md)：按资源和可观察失败信号选择五族候选。
 - [03 Retargeting 到 policy](docs/03-retargeting-to-policy.md)：检查轨迹用途、接触可行性与执行数据契约。
 - [04 On-policy diffusion 接口](docs/04-onpolicy-diffusion-interface.md)：定义概率对象、rollout 记录、执行 mapping 与诊断任务协议。
