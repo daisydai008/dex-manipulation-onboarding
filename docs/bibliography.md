@@ -477,3 +477,42 @@
 - 验证到哪里及缺口：已覆盖证据：abstract 覆盖 human、Atlas、dinosaur、dragon 角色和多种动态技能。 不支持的结论：灵巧手接触与 robot manipulation 未报告。
 - 对两类读者有什么用：【推测】它支持 tracking reference 与 task reward 的概念链条，但把其 RSI 思想迁移到手部接触仍需新证据。
 - 主源：[arXiv v3](https://arxiv.org/abs/1804.02717v3)
+
+## dexvla-2025
+- paper-id：dexvla-2025
+- title：DexVLA: Vision-Language Model with Plug-In Diffusion Expert for General Robot Control
+- authors-year：Wen 等，2025
+- arxiv：2502.05855v3
+- tier：extended
+- evidence：v3 abstract 与全文（diffusion expert 架构与 dexterous hand 实验节）
+- 解决什么问题：让 VLA 模型跨 single-arm、bimanual、dexterous hand 等多种形态高效学习长序列任务。
+- 方法与信号是什么：以 1B 参数的 diffusion-based action expert（ScaleDP transformer）做跨形态动作生成，配 embodiment curriculum 分阶段训练。
+- 验证到哪里及缺口：已覆盖证据：abstract 明确列出 dexterous hand 形态，全文报告真机多任务成功率与 gripper→dexterous hand 的 zero-shot 跨形态迁移。 不支持的结论：on-policy RL 与精确 log-likelihood 未报告，本仓库未逐字复核其训练细节。
+- 对两类读者有什么用：【推测】它是 diffusion 策略在真机灵巧手上部署的明确证据，可作为路线 1/2 的部署可行性参照。
+- 主源：[arXiv v3](https://arxiv.org/abs/2502.05855v3)
+
+## dexwild-2025
+- paper-id：dexwild-2025
+- title：DexWild: Dexterous Human Interactions for In-the-Wild Robot Policies
+- authors-year：2025
+- arxiv：2505.07813v2
+- tier：extended
+- evidence：v2 abstract 与全文（policy class 节）
+- 解决什么问题：用人手直接在野外采集数据，让灵巧操作策略泛化到新环境。
+- 方法与信号是什么：全文明确采用 diffusion-based policy（与 ACT 对照），以大规模人手交互数据 co-train，输出 end-effector 相对动作与 LEAP Hand 绝对关节角。
+- 验证到哪里及缺口：已覆盖证据：全文报告 LEAP Hand 真机、未见环境 68.5% 成功率（约为仅机器人数据训练的四倍）。 不支持的结论：on-policy 更新与精确密度未报告。
+- 对两类读者有什么用：【推测】它是 diffusion-based policy 在 LEAP 真机上的部署证据，支持路线 4 的人类运动数据到策略路径。
+- 主源：[arXiv v2](https://arxiv.org/abs/2505.07813v2)
+
+## dexumi-2025
+- paper-id：dexumi-2025
+- title：DexUMI: Using Human Hand as the Universal Manipulation Interface for Dexterous Manipulation
+- authors-year：2025
+- arxiv：2505.21864v3
+- tier：extended
+- evidence：v3 abstract 与全文（policy 节）
+- 解决什么问题：用人手作为通用接口，把灵巧操作技能迁移到多种机器人手。
+- 方法与信号是什么：硬件上用可戴外骨骼缩小运动学差距，软件上全文明确以 diffusion policy（DINO-V2 CLS token + 触觉读数）预测 16 步动作。
+- 验证到哪里及缺口：已覆盖证据：全文报告两种真机灵巧手平台上平均任务成功率 86%。 不支持的结论：on-policy ratio 与精确 log-likelihood 未报告。
+- 对两类读者有什么用：【推测】它是 diffusion policy 在真机多指灵巧手（含 Inspire）上的部署证据，支持路线 1/4。
+- 主源：[arXiv v3](https://arxiv.org/abs/2505.21864v3)
