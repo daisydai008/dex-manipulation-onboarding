@@ -25,8 +25,10 @@ FILES = {
     "README.md", "docs/01-problem-structure.md",
     "docs/02-method-landscape.md", "docs/03-retargeting-to-policy.md",
     "docs/04-onpolicy-diffusion-interface.md", "docs/05-ppo-enhancement.md",
-    "docs/bibliography.md", "scripts/check_links.py",
+    "docs/bibliography.md", "docs/diffusion-history/README.md",
+    "scripts/check_links.py",
 }
+EXPECTED_FILES = len(FILES)
 # CO-1 批准身份：稳定 paper ID -> 所据版本、tier；标题/年份勘误不改变身份。
 # 全局预算保留总量 ≤40、新增 ≤3；本次交付进一步要求新增 0、19 core+17 extended。
 FROZEN_WORKS = {
@@ -67,7 +69,10 @@ FROZEN_WORKS = {
     "mappo-2021": ("2103.01955v4", "extended"),
     "deepmimic-2018": ("1804.02717v3", "extended"),
 }
-READING_HEADINGS = ("Diffusion 与 on-policy RL 阅读路径", "Retargeting 与 residual RL 阅读路径")
+READING_HEADINGS = ()
+ROUTE_HEADING = "起步路线"
+ROUTE_MIN_REFS = 1
+ROUTE_MAX_REFS = 4
 OFFICIAL_HOST = "isaac-sim.github.io"
 OFFICIAL_PATH = "/IsaacLab/v2.2.0/source/overview/environments.html"
 OFFICIAL_TITLE = "Available Environments — Isaac Lab Documentation"
@@ -250,15 +255,22 @@ def entry_budget(entries, seed=FROZEN_WORKS):
 
 
 def reading_paths(text, ids):
+    """起步路线块：每条 ### 路线引 1–4 个已知 paper ID，无重复。"""
     errors, sizes = [], []
-    for heading in READING_HEADINGS:
-        m = re.search(r"^## " + heading + r"\s*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
-        refs = re.findall(r"docs/bibliography\.md#([a-z0-9-]+)", m[1]) if m else []
+    m = re.search(r"^## " + ROUTE_HEADING + r"\s*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+    if not m:
+        return [f"缺少 {ROUTE_HEADING} 章节"], sizes
+    routes = re.split(r"^### ", m[1], flags=re.M)[1:]
+    if not routes:
+        return [f"{ROUTE_HEADING} 下没有 ### 路线块"], sizes
+    for route in routes:
+        title = route.splitlines()[0].strip()
+        refs = re.findall(r"docs/bibliography\.md#([a-z0-9-]+)", route)
         sizes.append(len(refs))
-        if not 5 <= len(refs) <= 7 or len(set(refs)) != len(refs):
-            errors.append(f"阅读路径 {heading}: 须有 5–7 个不同 paper ID")
+        if not ROUTE_MIN_REFS <= len(refs) <= ROUTE_MAX_REFS or len(set(refs)) != len(refs):
+            errors.append(f"路线 {title}: 须有 {ROUTE_MIN_REFS}–{ROUTE_MAX_REFS} 个不同 paper ID")
         if set(refs) - ids:
-            errors.append(f"阅读路径 {heading}: 未知 paper ID")
+            errors.append(f"路线 {title}: 未知 paper ID")
     return errors, sizes
 
 
@@ -507,7 +519,7 @@ def local_checks():
             errors.append("不允许 symlink: " + str(relative))
         if path.is_file() or path.is_symlink():
             actual.add(str(relative))
-        elif path.is_dir() and str(relative) not in ("docs", "scripts"):
+        elif path.is_dir() and str(relative) not in ("docs", "scripts", "docs/diffusion-history"):
             errors.append("额外目录: " + str(relative))
     if actual != FILES:
         errors.append(f"结构不符: missing={sorted(FILES - actual)} extra={sorted(actual - FILES)}")
@@ -545,7 +557,7 @@ def local_checks():
             if issue:
                 errors.append(source + ": " + issue)
     tiers = Counter(e.get("tier") for e in entries)
-    print(f"STRUCTURE: expected=8 actual={len(actual)} {'PASS' if actual == FILES else 'FAIL'}")
+    print(f"STRUCTURE: expected={EXPECTED_FILES} actual={len(actual)} {'PASS' if actual == FILES else 'FAIL'}")
     print(f"STYLE: utf8_files={len(texts)} (UTF-8 strict; fence-aware tables; banned terms)")
     candidates = [(name, n, line) for name, text in sorted(texts.items())
                   for n, line in enumerate(text.splitlines(), 1) if "门" in line]
@@ -674,7 +686,7 @@ def self_test():
           "fence-aware style checks apply to authorized prose")
     check(bool(style_errors(BANNED[0])), "banned term detected without echo")
     check(normalize_title("Title: A-B") == normalize_title("TITLE A B"), "title punctuation/case normalization")
-    check(bool(reading_paths("## 同事 A 路径\n", {"sample-2024"})[0]), "missing/short reading paths")
+    check(bool(reading_paths("## " + ROUTE_HEADING + "\n", {"sample-2024"})[0]), "missing/short route paths")
     check(bool(entry_budget(entries * 41, {})[0]), "total and addition budgets")
     frozen = [{"paper-id": pid, "arxiv": version, "tier": tier}
               for pid, (version, tier) in FROZEN_WORKS.items()]
@@ -688,12 +700,12 @@ def self_test():
         changed[0][key] = value
         check(any("身份/版本/tier" in e for e in entry_budget(changed)[0]), "frozen " + key + " tamper")
     check(any("不允许新增" in e for e in entry_budget(frozen + entries)[0]), "CO-1 addition rejected within global budget")
-    reading = "\n".join("## " + heading + "\n" + "\n".join(
-        f"{i}. [p](docs/bibliography.md#{e['paper-id']})" for i, e in enumerate(frozen[:6], 1))
-        for heading in READING_HEADINGS)
+    reading = "## " + ROUTE_HEADING + "\n" + "\n".join(
+        "### 路线 " + str(i) + "\n1. [p](docs/bibliography.md#" + e["paper-id"] + ")"
+        for i, e in enumerate(frozen[:3], 1))
     ids = {e["paper-id"] for e in frozen}
-    check(reading_paths(reading, ids) == ([], [6, 6]), "new reading headings and valid paths")
-    check(bool(reading_paths(reading.replace(frozen[0]["paper-id"], "unknown-id"), ids)[0]), "unknown reading-path ID")
+    check(reading_paths(reading, ids) == ([], [1, 1, 1]), "new route headings and valid paths")
+    check(bool(reading_paths(reading.replace(frozen[0]["paper-id"], "unknown-id"), ids)[0]), "unknown route-path ID")
     for code in ("timeout", 429, 503):
         calls = []
         now = [0.0]
