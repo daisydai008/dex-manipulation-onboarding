@@ -1,5 +1,7 @@
 # 05 面向 retargeting 的 PPO 增强
 
+> 本章回答：选定方向后，PPO 的哪个环节该增强、怎么隔离出真实收益而非实现差异。读完能针对具体失败信号选排查项、设计只改一个变量的隔离实验。对应路线：所有路线选定后的增强与诊断阶段。
+
 PPO 增强应按修改位置分成 update/estimation、demonstration/residual 集成、并行训练与课程三层，而不是把新 actor、数据来源和环境吞吐混为一种算法进步。[ppo-2017](bibliography.md#ppo-2017)、[implementation-matters-2020](bibliography.md#implementation-matters-2020) 与 [on-policy-actor-critic-2020](bibliography.md#on-policy-actor-critic-2020) 的 abstract 分别支持多 epoch surrogate update、code-level optimization 的影响和系统化设计选择评估。
 
 本章的所有 REGRIND 插入点都是适配假设，不是源码审计或训练结果。REGRIND 项目的 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练只是接口背景；每个方向均列 baseline 问题、数据/信号、改动接口、证据层级与隔离评估，并用【推测】标注超出 abstract 的实现建议。
@@ -8,7 +10,7 @@ PPO 增强应按修改位置分成 update/estimation、demonstration/residual �
 
 【机制相关】【需新证据】update-stage KL/clip fraction 异常时，先排查 log-prob、advantage 与 normalization，再单独改变 LR、epoch 或 clip。记录同一原始 action 的新旧 likelihood、done/truncation 与估计量，避免把记录错误当作优化不稳；何时不选：如果问题发生在 rollout 执行前的 reference/reset 或观测不可得环节，不先调整 optimizer。依据是 [implementation-matters-2020](bibliography.md#implementation-matters-2020) 的实现归因问题，具体顺序是待验证的诊断设计。
 
-【机制相关】【需新证据】几何匹配但接触不可行时，先检查 reference、base controller 和 feasible resets，不先归咎 actor。记录 object support/slip、base-only 失败、residual 饱和与接触一致性，先改变可执行性接口再考虑策略参数化；何时不选：若相同 reference/base 已通过闭环检查、失败明确集中在 update 之后，转查概率与估计接口。依据与边界见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
+【机制相关】【需新证据】几何匹配但接触不可行时，先检查 reference、base controller 和 feasible resets，不先归咎 actor。记录 object support/slip、base-only 失败、residual 饱和与接触一致性，先改变可执行性接口再考虑策略参数化；何时不选：若相同 reference/base 已通过闭环检查、失败明确集中在 update 之后，转查概率与估计接口。依据见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
 
 【机制相关】【需新证据】早期失败使后续 phase 缺少样本时，先检查分阶段覆盖与 reset 可行率，再比较 phase resets/curriculum。保持 actor/reward 不变，并始终在固定部署初始状态上报告 end-to-end success；何时不选：若中间接触状态无法重建，或各 phase 已有充分覆盖，不以改 reset 掩盖 reference 或 update 缺陷。该路线仅借鉴 [demostart-2024](bibliography.md#demostart-2024) 的课程相关性。
 
@@ -28,7 +30,7 @@ Baseline 问题是同名 PPO 实现可能在 normalization、optimizer 与 rollo
 
 Baseline 问题是 Gaussian actor 在一致数据和更新条件下可能仍无法表达任务所需的动作模式，替换 diffusion actor 则会改变 likelihood 与计算量。【论文直接验证】[dppo-2024](bibliography.md#dppo-2024) v3 §4–5 验证 denoising-step PPO 与 demonstration fine-tuning；它不是任意 auxiliary-action 模型可逆、可求 exact density 或已获灵巧手收益的证据。
 
-【机制相关】【需新证据】所需信号由概率对象决定。符合 [04 条件推导](04-onpolicy-diffusion-interface.md#rollout-记录) 的 auxiliary actor 保存原始辅助动作、old log-prob 与 conditioning，DPPO 则保存可重建 denoising trajectory likelihood 的扩展 state/action 信息；改动接口是 sampling、rollout schema 与 likelihood evaluation。面向 REGRIND 的适配假设是先固定 base/reference 与参数无关的执行 mapping，边界见 [04](04-onpolicy-diffusion-interface.md#固定执行-mapping)。
+【机制相关】【需新证据】所需信号由概率对象决定。符合 [04 条件推导](04-onpolicy-diffusion-interface.md#rollout-记录) 的 auxiliary actor 保存原始辅助动作、old log-prob 与 conditioning，DPPO 则保存可重建 denoising trajectory likelihood 的扩展 state/action 信息；改动接口是 sampling、rollout schema 与 likelihood evaluation。面向 REGRIND 的适配假设是先固定 base/reference 与参数无关的执行 mapping，约定见 [04](04-onpolicy-diffusion-interface.md#固定执行-mapping)。
 
 【需新证据】隔离评估先建立 Gaussian baseline，再在同任务与同源 demonstrations 条件下比较候选 diffusion actor。分别控制 interactions 和 wall-clock，记录 inference latency、显存、更新耗时、成功率与恢复行为；若 actor、update schema、pretraining 同时改变，只能归因于组合，不能将差异单独解释为 actor expressiveness。[dppo-2024](bibliography.md#dppo-2024) v3 §4.3、Appendix D 的计算讨论不提供目标任务的预设赢家。
 
@@ -94,7 +96,7 @@ Baseline 问题是仿真视觉或动力学分布过窄会使部署性能不稳�
 
 ### 多任务并行与 reference 课程
 
-Baseline 问题是多任务数据可能竞争 shared capacity，而不是把单任务环境直接并排即可获得多技能。【论文直接验证】[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 的 abstract 报告多数 multi-task/few-shot 设置失败；[demostart-2024](bibliography.md#demostart-2024) 的课程成功不能抵消该证据边界。
+Baseline 问题是多任务数据可能竞争 shared capacity，而不是把单任务环境直接并排即可获得多技能。【论文直接验证】[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 的 abstract 报告多数 multi-task/few-shot 设置失败；[demostart-2024](bibliography.md#demostart-2024) 的课程成功不能抵消该证据范围。
 
 【机制相关】【推测】所需信号是 task/reference ID、各任务成功率、reset 难度和采样比例；改动接口是 task-conditioned observation、reset scheduler 与 sampling weights。面向 REGRIND 的适配假设是先在单 reference 证明闭环可行，再逐步扩展物体/轨迹，避免在算法与任务分布同时改变时声称增强有效。
 

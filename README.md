@@ -77,6 +77,8 @@ diffusion 也可以不在 actor 上，而在数据与运动生成一侧：把人
 
 ## 文件导航
 
+按处境选读，不必全读。想直接选方向：读本 README 的四条路线，再按路线跳到对应章节。关心某条路线的数学/接口约束：路线 1、2 看 [04](docs/04-onpolicy-diffusion-interface.md)，路线 3、4 看 [03](docs/03-retargeting-to-policy.md)。需要选方法族或排查失败：看 [02](docs/02-method-landscape.md) 与 [05](docs/05-ppo-enhancement.md)。要查证某篇论文的证据范围：查 [bibliography](docs/bibliography.md)。想了解 diffusion 接入 on-policy RL 的来龙去脉：看 [diffusion 历史](docs/diffusion-history/README.md)。
+
 - [01 问题结构](docs/01-problem-structure.md)：确定任务、观测与 benchmark 比较口径。
 - [02 方法选择](docs/02-method-landscape.md)：按资源和可观察失败信号选择五族候选。
 - [03 Retargeting 到 policy](docs/03-retargeting-to-policy.md)：检查轨迹用途、接触可行性与执行数据契约。
@@ -86,7 +88,7 @@ diffusion 也可以不在 actor 上，而在数据与运动生成一侧：把人
 - [注释书目](docs/bibliography.md)：维护 36 篇作品的身份、版本、证据与四问。
 - [检查器](scripts/check_links.py)：检查交付文件的结构、条目、相对链接、机械风格及外部来源。
 
-## 检查与接受边界
+## 检查与接受范围
 
 检查器只用 Python 标准库，不写 cache、日志或 fixture。交付文件清单显式登记在 `scripts/check_links.py` 的 `FILES` 集合，新文件须登记加入，编辑器与运行时辅助文件（如 `.vscode/`、`.pi-subagents/`、`.gitignore`）不属于交付树，运行检查前须从树中删除，本地忽略规则放全局 gitignore 或 `.git/info/exclude`。`--lint` 不联网，按内嵌身份映射要求 36 条、19 core、17 extended、新增 0；完整模式核验记录版本的 arXiv API title/ID、书目外链、全部交付 Markdown 中的官方工程文档链接与内部 anchor。网络请求单次 15 秒、至多重试 2 次、同 host 间隔至少 1 秒、总联网预算 15 分钟；退出码为 0 全部通过、2 内容失败、3 网络未完成，内容失败优先，只有 failed=0 且 unverified=0 才通过。
 

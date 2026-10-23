@@ -1,10 +1,12 @@
 # 04 On-policy diffusion 的概率与执行接口
 
+> 本章回答：on-policy diffusion 里 PPO 的 ratio 到底作用在哪个随机变量上、要记录什么、执行 mapping 怎么固定才不让推导失效。读完能判断你的 sampler 走 denoising-step 还是 exact-inversion、rollout 该存什么。对应路线：路线 1（固定 mapping 换 actor）与路线 2（denoising-step PPO）的数学契约。
+
 本章先定义 PPO 使用的随机变量，再讨论记录、优化与执行条件。下文的【条件推导】是自足的数学契约，不声称任意 diffusion sampler 可逆、可计算 Jacobian 或已有目标任务收益；有名称的方法只承担其自身证据范围内的主张，任务选择建议均标【机制相关】或【需新证据】。
 
 ## 概率对象
 
-【条件推导】可求值的密度要求变换条件显式成立。给定固定 conditioning `c`，设基础变量 `z∈R^d` 有相对 Lebesgue measure 的已知密度 `p₀(z|c)`，辅助动作 `ξ=Fθ(z;c)∈R^d`；本推导要求 `Fθ` 在支持集内部是 C¹ diffeomorphism（一一可逆、正逆映射连续可微、Jacobian 非奇异，忽略零测边界），且逆映射和 log-determinant 可计算，才使用 change-of-variables 得到下式。一般 stochastic、多对一或维度改变的 diffusion sampler 不自动满足这些条件。
+【条件推导】可求值的密度要求变换条件显式成立。给定固定 conditioning `c`，设基础变量 `z∈R^d` 有相对 Lebesgue measure 的已知密度 `p₀(z|c)`，辅助动作 `ξ=Fθ(z;c)∈R^d`；本推导要求 `Fθ` 在支持集内部是 C¹ diffeomorphism（一一可逆、正逆映射连续可微、Jacobian 非奇异，忽略零测集合），且逆映射和 log-determinant 可计算，才使用 change-of-variables 得到下式。一般 stochastic、多对一或维度改变的 diffusion sampler 不自动满足这些条件。
 
 ```text
 z = Fθ⁻¹(ξ;c)

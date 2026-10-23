@@ -1,5 +1,7 @@
 # 01 问题结构
 
+> 本章回答：灵巧操作该按什么维度拆开比较，为什么不能只看手的自由度或算法名。读完能判断你的任务属于哪个谱系、观测是否部分可观测、所用硬件/benchmark 能否与文献横向比较。对应路线：所有路线的任务与观测前提。
+
 Dexterous manipulation 需要先按任务、观测与执行接口分解，不能只按手的自由度或算法名称比较。本导读用 [注释书目](bibliography.md) 中已限定来源的证据说明差异；未由所据 abstract 或指定全文给出的配置记为“未报告”。
 
 ## 任务谱系
@@ -18,7 +20,7 @@ Long-horizon 组合的困难包括子任务之间的可达性和失败恢复。[
 
 Observation modality 是所有方法族的横切变量，不是算法附注。视觉、proprioception、tactile、privileged simulator state 应分别记录 actor 与 critic 能看到什么；【需新证据】【推测】若训练 actor 可直接访问真实部署不可得的物体状态，就必须补充 state estimator 或训练/部署观测一致性实验，不能用更强 actor 参数化代替感知验证。
 
-已核验的视觉证据有明确边界。[dextreme-2022](bibliography.md#dextreme-2022) 比较 vision policy 与 privileged motion-capture state，[visual-dexterity-2022](bibliography.md#visual-dexterity-2022) 使用单 depth camera，[demostart-2024](bibliography.md#demostart-2024) 使用多相机 raw pixels 和 proprioception；abstract 未报告它们完整的 actor/critic privileged split、history 长度或端到端延迟。
+已核验的视觉证据有明确范围。[dextreme-2022](bibliography.md#dextreme-2022) 比较 vision policy 与 privileged motion-capture state，[visual-dexterity-2022](bibliography.md#visual-dexterity-2022) 使用单 depth camera，[demostart-2024](bibliography.md#demostart-2024) 使用多相机 raw pixels 和 proprioception；abstract 未报告它们完整的 actor/critic privileged split、history 长度或端到端延迟。
 
 Tactile 能提供视觉不能直接推断的接触信号，但不能从传感器存在推导出完整可观测性。[rotate-touch-2023](bibliography.md#rotate-touch-2023) 的证据是 binary touch-only in-hand rotation 及新物体真机部署；传感器硬件综述不在本仓库范围，history、recurrence 与测量延迟在本条证据中未报告。
 

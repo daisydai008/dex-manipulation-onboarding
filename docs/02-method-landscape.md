@@ -1,12 +1,14 @@
 # 02 从资源和失败信号选择方法
 
-方法选择应先说明现有资源、失败发生在哪里，以及首个实验能排除什么解释。本章与 [README](../README.md) 负责选方向；[01](01-problem-structure.md) 定义任务边界，[03](03-retargeting-to-policy.md) 检查可执行性，[04](04-onpolicy-diffusion-interface.md) 约束概率接口，[05](05-ppo-enhancement.md) 负责诊断和隔离实验。以下选型均为【机制相关】【需新证据】的建议，不构成方法排名或灵巧手收益承诺。
+> 本章回答：给定手上现有资源和最可能的失败点，该选哪个方法族。读完能把你的处境映射到五个方法族之一，并知道首个实验要排除什么解释。对应路线：为四条起步路线提供选型依据与失败信号排查。
+
+方法选择应先说明现有资源、失败发生在哪里，以及首个实验能排除什么解释。本章与 [README](../README.md) 负责选方向；[01](01-problem-structure.md) 界定任务范围，[03](03-retargeting-to-policy.md) 检查可执行性，[04](04-onpolicy-diffusion-interface.md) 约束概率接口，[05](05-ppo-enhancement.md) 负责诊断和隔离实验。以下选型均为【机制相关】【需新证据】的建议，不构成方法排名或灵巧手收益承诺。
 
 ## 任务契约
 
 【机制相关】首个实验应固定任务契约，而不是只给一个 benchmark 名称。按 [01](01-problem-structure.md#任务谱系) 写明 in-hand、grasp acquisition、arm-hand、双手或 long-horizon 的目标，定义 success、掉落、超时和恢复行为，记录初始接触状态、测试物体与部署初始分布；未明确这些条件时，不比较论文回报数字。
 
-【机制相关】【需新证据】观测与动作契约应横贯所有方法族。分别记录 actor/critic 的 privileged state、视觉、proprioception、tactile、history/recurrence、采样时间与 delay，未知项记“未报告”；动作要明确 target/delta/velocity/torque、control rate、action chunk 与执行 mapping。若部署不可获得训练输入，应先解决感知或接口不一致，不能由 actor 容量更大推断问题消失；证据边界见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
+【机制相关】【需新证据】观测与动作契约应横贯所有方法族。分别记录 actor/critic 的 privileged state、视觉、proprioception、tactile、history/recurrence、采样时间与 delay，未知项记“未报告”；动作要明确 target/delta/velocity/torque、control rate、action chunk 与执行 mapping。若部署不可获得训练输入，应先解决感知或接口不一致，不能由 actor 容量更大推断问题消失；证据范围见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
 
 ## 资源盘点
 
@@ -80,7 +82,7 @@
 
 【机制相关】【需新证据】有 simulator、无示范时，先建立 Gaussian PPO baseline。固定 reward/reset/observation/action semantics，输出学习曲线、成功/掉落、KL/clip fraction 与分段耗时；只有 baseline 接口一致且仍有具体失败假设时才选择五族中的下一项，不把 diffusion 作为默认起点，依据 [ppo-2017](bibliography.md#ppo-2017) 与 [05](05-ppo-enhancement.md#固定-ppo-更新与估计口径)。
 
-【机制相关】【需新证据】有成功 robot demonstrations 时，先验证 imitation 闭环，再决定 reward fine-tuning。先统一数据与部署动作、评估固定 reset 的 success 和偏离示范后的恢复；若 imitation 已满足任务，不因存在 RL 方法而追加复杂度。需要 fine-tuning 时再按 [dppo-2024](bibliography.md#dppo-2024) 的证据边界评估，不把其结果外推为灵巧手保证。
+【机制相关】【需新证据】有成功 robot demonstrations 时，先验证 imitation 闭环，再决定 reward fine-tuning。先统一数据与部署动作、评估固定 reset 的 success 和偏离示范后的恢复；若 imitation 已满足任务，不因存在 RL 方法而追加复杂度。需要 fine-tuning 时再按 [dppo-2024](bibliography.md#dppo-2024) 的证据范围评估，不把其结果外推为灵巧手保证。
 
 【机制相关】【需新证据】有 reference/base controller 时，先验证物理可行性与 base-only，再测 Gaussian residual，最后考虑换 actor。按 [03](03-retargeting-to-policy.md) 区分 BC、tracking 与 reset 用途，固定 controller/reference 的版本与 residual scale；若 base-only 已失稳或 reference 不可行，先修复这些接口，而不是用更复杂 actor 掩盖原因。该顺序借鉴 [residual-rl-2018](bibliography.md#residual-rl-2018) 的控制分工，目标任务收益尚待验证。
 

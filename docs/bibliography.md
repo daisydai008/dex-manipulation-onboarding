@@ -111,7 +111,7 @@
 - 解决什么问题：提供统一、模块化且 GPU 加速的机器人学习环境构建框架。
 - 方法与信号是什么：基于 NVIDIA Isaac Sim 组织 rigid/deformable simulation、传感器、motion generator、RL 与 demonstration collection。
 - 验证到哪里及缺口：已覆盖证据：abstract 列出 16 个机器人平台、4 种 sensor modality、10 个 motion generator 和 20+ benchmark task。 不支持的结论：特定灵巧手任务的可比协议未报告。
-- 对两类读者有什么用：【推测】diffusion/on-policy 读者 可把它作为大规模 on-policy 实验平台背景，retargeting 读者可据其模块边界规划 reference、observation 与 action 接口。
+- 对两类读者有什么用：【推测】diffusion/on-policy 读者 可把它作为大规模 on-policy 实验平台背景，retargeting 读者可据其模块划分规划 reference、observation 与 action 接口。
 - 主源：[arXiv v2](https://arxiv.org/abs/2301.04195v2)
 
 ## dexpilot-2020
@@ -397,7 +397,7 @@
 - 解决什么问题：从 partial object point cloud 生成、评估并优化 dexterous grasp。
 - 方法与信号是什么：DexSampler 进行 conditional diffusion sampling，DexEvaluator 评分，并用 EGD/ESR refinement。
 - 验证到哪里及缺口：已覆盖证据：abstract 报告相对 FFHNet 的仿真与真机 grasp success 提升。 不支持的结论：抓取后 closed-loop manipulation 未报告。
-- 对两类读者有什么用：【推测】它覆盖 grasp acquisition，与本导读的 in-hand/residual 闭环控制有不同任务边界，二者不应按同一任务成功率比较。
+- 对两类读者有什么用：【推测】它覆盖 grasp acquisition，与本导读的 in-hand/residual 闭环控制有不同任务划分，二者不应按同一任务成功率比较。
 - 主源：[arXiv v3](https://arxiv.org/abs/2402.02989v3)
 
 ## diffusion-ql-2022
