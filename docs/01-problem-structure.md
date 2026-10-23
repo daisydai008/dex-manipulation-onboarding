@@ -1,6 +1,6 @@
 # 01 问题结构
 
-Dexterous manipulation 需要先按任务、观测与执行接口分解，不能只按手的自由度或算法名称比较。本文用 [注释书目](bibliography.md) 中已限定来源的证据说明差异；未由所据 abstract 或指定全文给出的配置记为“未报告”。
+Dexterous manipulation 需要先按任务、观测与执行接口分解，不能只按手的自由度或算法名称比较。本导读用 [注释书目](bibliography.md) 中已限定来源的证据说明差异；未由所据 abstract 或指定全文给出的配置记为“未报告”。
 
 ## 任务谱系
 

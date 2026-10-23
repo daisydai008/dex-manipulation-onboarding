@@ -13,7 +13,7 @@ log qθ(ξ|c) = log p₀(z|c) − log |det D_z Fθ(z;c)|
 
 【条件推导】exact density 仅指该模型的密度公式可求值，不表示不存在数值误差或已知执行动作密度。若执行动作 `u=g(c,ξ)`，多对一的 `g` 通常要对原像积分才能得到 `pθ(u|c)`；不能把某个 `ξ` 的 `qθ(ξ|c)` 直接命名为 `pθ(u|c)`。实现仍需检查 inverse round-trip、Jacobian 求值、支持集及浮点误差；这些是条件验证，不是已有 sampler 性能事实。
 
-【论文直接验证】DPPO 提供另一种明确的 on-policy 概率对象。[dppo-2024](bibliography.md#dppo-2024) v3 §4.1 Eq. (4.1)–(4.4)、§4.2 Eq. (4.5)–(4.8) 在扩展 state `(s,a^{k+1})` 上使用 Gaussian denoising transition 的 likelihood 形成 PPO 更新，不要求求出最终 action chunk 的边缘密度；§4.3 还区分 sampling-noise 与 likelihood-noise 的最小值。该方法不是上述可逆变换条件已满足的证据。
+【论文直接验证】DPPO 提供另一种明确的 on-policy 概率对象。[dppo-2024](bibliography.md#dppo-2024) v3 §4.1 Eq. (4.1)–(4.4)、§4.2 Eq. (4.5)–(4.8) 在扩展 state `(s,a^{k+1})` 上使用 Gaussian denoising transition 的 likelihood 形成 PPO 更新，不要求求出最终 action chunk 的边缘密度；§4.3 还分别给出采样时与 Gaussian likelihood 求值时不同的 denoising noise 下限（σ^exp_min 与 σ^prob_min）。该方法不是上述可逆变换条件已满足的证据。
 
 【机制相关】offline action generation 与 on-policy density evaluation 是不同接口。[diffusion-ql-2022](bibliography.md#diffusion-ql-2022) 与 [idql-2023](bibliography.md#idql-2023) 的 abstract 分别支持 value-guided diffusion 和 critic-weighted behavior samples；它们不能证明任意生成动作能直接用于 PPO ratio，也不能替未指定的 sampler 提供 entropy/KL 结论。
 

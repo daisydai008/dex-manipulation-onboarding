@@ -20,7 +20,7 @@ PPO 增强应按修改位置分成 update/estimation、demonstration/residual �
 
 Baseline 问题是同名 PPO 实现可能在 normalization、optimizer 与 rollout 处理上不同，导致增强收益无法归因。【论文直接验证】[implementation-matters-2020](bibliography.md#implementation-matters-2020) 的 abstract 指出 code-level optimization 解释其研究中 PPO 相对 TRPO 的多数回报提升；[on-policy-actor-critic-2020](bibliography.md#on-policy-actor-critic-2020) 研究 50+ choices，但本导读不据 abstract 指定某个 hyperparameter 必然最优。
 
-【机制相关】【推测】所需信号是 rollout 的 reward、done/truncation、value estimate、old log-prob、advantage 与 normalization statistics；改动接口是 estimator、surrogate loss 和 optimizer。面向 REGRIND 的适配假设是先检查 time-limit bootstrapping、advantage normalization、value scale、minibatch/epoch、gradient clipping 与 KL/clip fraction 记录，而不是先改 retargeting objective；这些具体审计项是根据上述实现归因问题提出的检查清单，不冒充论文 abstract 的逐项结论。
+【机制相关】【推测】所需信号是 rollout 的 reward、done/truncation、value estimate、old log-prob、advantage 与 normalization statistics；改动接口是 estimator、surrogate loss 和 optimizer。面向 REGRIND 的适配假设是先检查 time-limit bootstrapping、advantage normalization、value scale、minibatch/epoch、gradient clipping 与 KL/clip fraction 记录，而不是先改 retargeting objective；这些具体审计项是根据上述实现归因问题提出的检查清单，不是论文 abstract 的逐项结论。
 
 【需新证据】【推测】隔离评估应保持 actor、reward、reference、reset 和 environment steps 一致，每次只改变一个实现因素。分别报告多个固定 seed 的 task success、reference error、掉落率、KL/clip fraction、value error 与 wall-clock，先在固定动作接口上确认稳定性，再考虑下层候选；来源与证据上限仍是 [ppo-2017](bibliography.md#ppo-2017) 及两篇 implementation study，不把该方案写成已验证的 dexterous 配方。
 

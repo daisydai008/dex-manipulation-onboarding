@@ -45,7 +45,7 @@
 
 ## 检查与接受边界
 
-检查器只用 Python 标准库，不写 cache、日志或 fixture。`--lint` 不联网，按内嵌身份映射要求 36 条、19 core、17 extended、新增 0；完整模式核验记录版本的 arXiv API title/ID、书目外链、全部交付 Markdown 中的官方工程文档链接与内部 anchor。网络请求单次 15 秒、至多重试 2 次、同 host 间隔至少 1 秒、总联网预算 15 分钟；退出码为 0 全部通过、2 内容失败、3 网络未完成，内容失败优先，只有 failed=0 且 unverified=0 才通过。
+检查器只用 Python 标准库，不写 cache、日志或 fixture。检查器冻结恰好 8 个交付文件，编辑器与运行时辅助文件（如 `.vscode/`、`.pi-subagents/`、`.gitignore`）不属于交付树，运行检查前须从树中删除；需要本地忽略时，把规则放进全局 gitignore 或 `.git/info/exclude`。`--lint` 不联网，按内嵌身份映射要求 36 条、19 core、17 extended、新增 0；完整模式核验记录版本的 arXiv API title/ID、书目外链、全部交付 Markdown 中的官方工程文档链接与内部 anchor。网络请求单次 15 秒、至多重试 2 次、同 host 间隔至少 1 秒、总联网预算 15 分钟；退出码为 0 全部通过、2 内容失败、3 网络未完成，内容失败优先，只有 failed=0 且 unverified=0 才通过。
 
 ```bash
 python3 scripts/check_links.py --self-test
