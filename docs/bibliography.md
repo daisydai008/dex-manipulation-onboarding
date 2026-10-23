@@ -516,3 +516,55 @@
 - 验证到哪里及缺口：已覆盖证据：全文报告两种真机灵巧手平台上平均任务成功率 86%。 不支持的结论：on-policy ratio 与精确 log-likelihood 未报告。
 - 对两类读者有什么用：【推测】它是 diffusion policy 在真机多指灵巧手（含 Inspire）上的部署证据，支持路线 1/4。
 - 主源：[arXiv v3](https://arxiv.org/abs/2505.21864v3)
+
+## dexcast-2026
+- paper-id：dexcast-2026
+- title：DexCast: Learning Real-World Dexterous Control from Human Videos
+- authors-year：Gao 等，2026
+- arxiv：2610.14691v2
+- tier：extended
+- evidence：v2 abstract 与全文（方法与部署节）
+- 解决什么问题：从单目人类视频直接学习真机灵巧手闭环控制，不用任何真机示范。
+- 方法与信号是什么：从视频学习紧凑的 motion-aware 条件表征，作为 3D diffusion policy 的条件，产生可执行动作。
+- 验证到哪里及缺口：已覆盖证据：全文报告真机灵巧手多任务平均成功率最高 87.5%，支持跨场景 zero-shot 部署。 不支持的结论：on-policy 更新与精确密度未报告。
+- 对两类读者有什么用：【推测】它是 diffusion policy 从人类视频到真机灵巧手的部署证据，支持路线 4 与路线 1。
+- 主源：[arXiv v2](https://arxiv.org/abs/2610.14691v2)
+
+## human2dex-2026
+- paper-id：human2dex-2026
+- title：Human2Dex: Dexterous Robot Learning from Wrist-Centric Human Demonstrations
+- authors-year：Zhang 等，2026
+- arxiv：2610.13119v1
+- tier：extended
+- evidence：v1 abstract 与全文（policy 节与结果表）
+- 解决什么问题：用腕部视角的人类示范跨灵巧手形态学习，共享人类数据接口。
+- 方法与信号是什么：转换后的人类观测条件一个 1-D U-Net diffusion policy，预测某一手-任务对的 16 步原生命令。
+- 验证到哪里及缺口：已覆盖证据：全文报告两种真机灵巧手（含 Linker O6）上池化成功率最高 85.8%。 不支持的结论：on-policy ratio 未报告。
+- 对两类读者有什么用：【推测】它是 diffusion policy 跨手型真机部署的证据，支持路线 4。
+- 主源：[arXiv v1](https://arxiv.org/abs/2610.13119v1)
+
+## skillweave-2026
+- paper-id：skillweave-2026
+- title：SkillWeave: Weaving Heterogeneous Demonstrations into Long-Horizon Manipulation Skills
+- authors-year：Tamura 等，2026
+- arxiv：2610.12046v1
+- tier：extended
+- evidence：v1 abstract 与全文（方法节）
+- 解决什么问题：把异构示范编成可组合的 long-horizon 灵巧技能。
+- 方法与信号是什么：每个子任务训练一个 object-mask 条件的 diffusion policy，利用其随机性采样多个 action chunk 以衔接 successor 的起始状态。
+- 验证到哪里及缺口：已覆盖证据：全文报告真机灵巧手子任务与 long-horizon 端到端成功率。 不支持的结论：on-policy 更新未报告。
+- 对两类读者有什么用：【推测】它是 diffusion policy 在真机灵巧手 long-horizon 组合上的证据，并直接利用 diffusion 随机性做子任务衔接，支持路线 4 与路线 2 的组合思想。
+- 主源：[arXiv v1](https://arxiv.org/abs/2610.12046v1)
+
+## modex-2026
+- paper-id：modex-2026
+- title：MoDex: A Diffusion Policy for Sequential Multi-Object Dexterous Grasping
+- authors-year：Lu 等，2026
+- arxiv：2606.05407v1
+- tier：extended
+- evidence：v1 abstract 与全文（方法与真机部署节）
+- 解决什么问题：多物体顺序灵巧抓取，且需对 OOD 动作鲁棒。
+- 方法与信号是什么：diffusion policy 先 behavior cloning 预训练，再用 DPPO 在线 fine-tune；PointNet 与 context encoder 作为条件。
+- 验证到哪里及缺口：已覆盖证据：全文报告真机 Allegro Hand 上对 OOD 物体的 zero-shot 迁移，较仿真只有有限下降。 不支持的结论：灵巧手多指重定向未报告，任务是顺序抓取。
+- 对两类读者有什么用：【推测】它是最贴近本导读主线的证据：diffusion policy + DPPO on-policy fine-tune + 真机灵巧手，直接把路线 2 落到了硬件。
+- 主源：[arXiv v1](https://arxiv.org/abs/2606.05407v1)
