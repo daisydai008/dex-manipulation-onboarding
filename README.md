@@ -15,6 +15,14 @@ Diffusion 在机器人学习中的用途，可以按“从哪里学习动作、�
 
 这些用途可以组合，不是必须依次采用的阶段。方法之间的区别与历史展开见 [diffusion 历史](docs/diffusion-history/README.md)。
 
+读这些路线前，先分清三个时间尺度。denoising step 是模型内部生成动作的迭代，不是机器人控制步；action prediction horizon `T_p` 是一次生成的动作段长度，action execution horizon `T_a` 是其中实际执行的前缀长度。Action chunk 指这一段动作，receding horizon 指执行前缀后取得新观测、再生成下一段：
+
+```text
+最近观测 → 生成 T_p 步动作（一个 action chunk）→ 执行前 T_a 步 → 新观测 → 重新生成
+```
+
+DPPO 的 PPO ratio 也不是在整段动作上求一个边缘密度，而是在每个 Gaussian 去噪转移上比较新旧策略。下面的数学展开见 [diffusion 历史](docs/diffusion-history/README.md)。
+
 ## 关键术语
 
 首次使用后不再重复定义。

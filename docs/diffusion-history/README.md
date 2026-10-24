@@ -1,10 +1,25 @@
 # 生成式策略接入 on-policy RL 的历史线
 
-本文件展开 README 背景节的第二段，供需要完整历史脉络的读者。它只覆盖"如何把 diffusion/flow 一类生成模型用进需要逐样本 log-likelihood 的 on-policy 更新"这条线，不做整个 diffusion-RL 的综述。所有文献身份、版本与所据证据以 [../bibliography](../bibliography.md) 为准；除 dppo-2024 的指定全文与七篇真机灵巧手 diffusion 部署条目外，其余仅到所记录版本的 abstract，越出另标【推测】。
+本文件展开 README 背景节的第二段,供需要完整历史脉络的读者。它只覆盖"如何把 diffusion/flow 一类生成模型用进需要逐样本 log-likelihood 的 on-policy 更新"这条线,不做整个 diffusion-RL 的综述。所有文献身份、版本与所据证据以 [../bibliography](../bibliography.md) 为准；除 dppo-2024 的指定全文、diffusion-policy-2023 v5 §2.1–2.3 与 §4.3，以及七篇真机灵巧手 diffusion 部署条目外，其余仅到所记录版本的 abstract，越出另标【推测】。
 
 ## 起点：条件动作生成
 
 【论文直接验证】[diffusion-policy-2023](../bibliography.md#diffusion-policy-2023) 用条件 denoising diffusion process 表示 multimodal、高维的 visuomotor 动作分布，配合 receding horizon control 与 time-series diffusion transformer。它解决的是 imitation 侧的表达问题——同一状态下存在的多种合理动作能被一个模型覆盖，而不是被高斯均值为唯一模式的假设压平。这一阶段的 diffusion 还不碰 RL 的 ratio，只负责把动作分布建模好。
+
+## 先分清 action chunk、执行窗口与 denoising step
+
+【论文直接验证】Diffusion Policy v5 §2.2–2.3 的学习对象不是单个动作，而是以最近 `T_o` 步观测为条件的整段动作分布。设 `O_t` 是观测历史、`A_t^0` 是示范中的动作段，训练时先给动作段加噪，再让网络预测所加的噪声；用常见 DDPM 记号可写为：
+
+```text
+O_t = (o_{t−T_o+1}, …, o_t)
+A_t^0 = (a_t, a_{t+1}, …, a_{t+T_p−1})
+A_t^k = √(ᾱ_k) A_t^0 + √(1−ᾱ_k) ε,   ε ~ N(0, I)
+L = E || ε − ε_θ(A_t^k, k, O_t) ||²
+```
+
+推理时则从 `A_t^K ~ N(0,I)` 出发，反复用 `ε_θ` 和 scheduler 去噪，得到 `A_t^0`。这里的 `K` 是模型内部的 denoising step 数，`T_p` 是动作预测长度，二者不是同一时间轴；一次去噪完成才得到一个 action chunk，而不是得到完整 episode。
+
+【论文直接验证】v5 §2.3 将实际执行的动作前缀长度记为 `T_a`：一次预测 `T_p` 步，只执行前 `T_a` 步，随后读取新观测并重新预测。Action chunk 是这次预测的动作段，receding horizon 是“执行前缀—重新观测—再次预测”的控制循环。
 
 ## 把 diffusion 带进 RL：offline 价值引导
 
@@ -16,7 +31,16 @@ PPO 一类 on-policy 算法的 ratio 是 `exp(log qθ(a|c) − log qold(a|c))`�
 
 ## 路线一：denoising-step PPO（绕开边缘密度）
 
-【论文直接验证】[dppo-2024](../bibliography.md#dppo-2024) 不要求最终 action chunk 的边缘密度，而是把每个 Gaussian denoising transition 当作扩展 MDP 的 policy action，ratio 对象是逐步 denoising likelihood。它通常从 demonstrations 预训练，再在线 fine-tune。这条路的代价是 rollout 要记录整条去噪轨迹的扩展 state/action，而不是只记一个最终动作。它证明了 diffusion 可以进入 on-policy 更新，但没有回答"最终动作的精确密度"。
+【论文直接验证】[dppo-2024](../bibliography.md#dppo-2024) 不要求最终 action chunk 的边缘密度，而是把每个 Gaussian denoising transition 当作扩展 MDP 的 policy action，ratio 对象是逐步 denoising likelihood。它通常从 demonstrations 预训练，再在线 fine-tune。这条路的代价是 rollout 要记录整条去噪轨迹的扩展 state/action，而不是只记一个最终动作。它证明了 diffusion 可以进入 on-policy 更新，但没有回答“最终动作的精确密度”。
+
+【论文直接验证】DPPO v3 §4.1–4.2 的具体做法是：在环境决策时刻 `t`，若去噪链为 `A_t^K → … → A_t^0`，就把扩展 state 写成 `(s_t, A_t^{k+1})`，把下一步去噪结果 `A_t^k` 当作扩展 action。由于该转移本身是 Gaussian，新旧策略在同一转移上的 log-prob 都能直接计算，PPO ratio 因而是：
+
+```text
+r̄_t^k(θ) = exp( log π̄_θ(A_t^k | s_t, A_t^{k+1})
+                 − log π̄_old(A_t^k | s_t, A_t^{k+1}) )
+```
+
+这与在最终 `A_t^0` 上求 `π(A_t^0|s_t)` 是不同对象。环境奖励仍在动作执行后给出，critic 只依赖环境状态 `s_t`，advantage 再按 denoising discount 分配到各去噪步；所以 DPPO 并非“不用 log-likelihood”，而是只用每个去噪转移的 Gaussian log-likelihood。
 
 ## 路线二：exact-inversion（正面恢复 log-likelihood）
 

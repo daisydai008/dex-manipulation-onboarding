@@ -1,6 +1,6 @@
 # 注释书目
 
-本文件是入选作品的唯一逐篇注释位置；其他文档只通过稳定 paper ID 指向这里。除 [dppo-2024](#dppo-2024) 的机制说明与七篇真机灵巧手 diffusion 部署条目（dexvla-2025、dexwild-2025、dexumi-2025、dexcast-2026、human2dex-2026、skillweave-2026、modex-2026）使用全文版本外，其余条目的证据上限是所记录版本的 abstract 与公开元数据，超出该范围的分析明确标为【推测】。书目不冻结，可经全文核实后新增。
+本文件是入选作品的唯一逐篇注释位置；其他文档只通过稳定 paper ID 指向这里。除 [dppo-2024](#dppo-2024) 的机制说明、[diffusion-policy-2023](#diffusion-policy-2023) v5 §2.1–2.3 与 §4.3，以及七篇真机灵巧手 diffusion 部署条目（dexvla-2025、dexwild-2025、dexumi-2025、dexcast-2026、human2dex-2026、skillweave-2026、modex-2026）使用全文或指定章节外，其余条目的证据上限是所记录版本的 abstract 与公开元数据，超出该范围的分析明确标为【推测】。书目不冻结，可经全文核实后新增。
 
 ## 证据约定
 
@@ -159,10 +159,10 @@
 - authors-year：Chi 等，2023；RSS 2023
 - arxiv：2303.04137v5
 - tier：core
-- evidence：v5 abstract
+- evidence：v5 abstract；§2.1–2.3、§4.3
 - 解决什么问题：用条件 denoising diffusion process 表示 multimodal、高维 visuomotor action distribution。
 - 方法与信号是什么：学习 action-distribution score，并结合 receding horizon control、visual conditioning 与 time-series diffusion transformer。
-- 验证到哪里及缺口：已覆盖证据：abstract 报告 4 个 manipulation benchmark 的 12 项任务及相对既有方法平均提升 46.9%。 不支持的结论：online RL 与灵巧手专项证据未报告。
+- 验证到哪里及缺口：已覆盖证据：abstract 报告 4 个 manipulation benchmark 的 12 项任务及相对既有方法平均提升 46.9%；§2.3 定义 observation/prediction/execution horizon，§4.3 讨论 action horizon 的一致性与响应速度折中。 不支持的结论：online RL 与灵巧手专项证据未报告。
 - 对两类读者有什么用：【推测】diffusion/on-policy 读者 可把它作为 on-policy diffusion 的生成策略背景，retargeting 读者可把 action chunking 作为从轨迹到闭环策略的一种表示。
 - 主源：[arXiv v5](https://arxiv.org/abs/2303.04137v5)
 
