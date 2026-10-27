@@ -115,3 +115,16 @@ Diffusion 也可把生成目标限定为抓取候选。[DexDiffuser](docs/biblio
 - [REGRIND 对接思路](docs/regrind-integration.md)：需要把生成式策略用于 REGRIND 的 reference、residual 或部署扰动试验时读。
 - [仓库检查与维护](scripts/README.md)：需要运行结构、链接与来源检查时读。
 - [注释书目](docs/bibliography.md)：需要查某篇论文解决的问题、所做实验与原文来源时读。
+
+## 快速答案与参考论文
+
+如果只能先选一条路线：有成功 demonstrations 时，先用 Diffusion Policy 做 BC 预训练，再用 DPPO 在仿真中 fine-tune；没有 demonstrations 时，先建立 Gaussian PPO baseline，确认任务、奖励和观测是否可学，再决定是否引入 diffusion actor。
+
+按现有资源可以这样选择：
+
+- **已有可交互仿真**：先跑 Gaussian PPO，再考虑替换 actor。[PPO](docs/bibliography.md#ppo-2017) 提供 ratio 与更新基线，[Implementation Matters](docs/bibliography.md#implementation-matters-2020) 说明为什么要先固定实现细节，[DPPO](docs/bibliography.md#dppo-2024) 则提供 diffusion actor 的 on-policy 更新方式。
+- **已有成功 demonstrations**：先验证 imitation 闭环，再考虑 DPPO fine-tuning。[Diffusion Policy](docs/bibliography.md#diffusion-policy-2023) 提供条件动作生成，[DPPO](docs/bibliography.md#dppo-2024) 提供 denoising-step PPO，[MoDex](docs/bibliography.md#modex-2026) 展示 BC 预训练、仿真 DPPO fine-tune 和 Allegro 真机 zero-shot 部署的完整链条；其任务是顺序抓取，in-hand 重定向可作为后续实验。
+- **已有 retargeting 或 base controller**：优先评估 residual。[Residual RL](docs/bibliography.md#residual-rl-2018) 提供 base 与 RL 修正量的控制分工，[DeepMimic](docs/bibliography.md#deepmimic-2018) 提供 tracking、phase 与 RSI 参照，[DemoStart](docs/bibliography.md#demostart-2024) 提供 demonstration-led curriculum 与 reset 思路。
+- **希望采用 exact-inversion**：先验证 sampler 的可逆性、Jacobian 和数值稳定性，再与 DPPO 比较。[概率基础附录](docs/appendix-probability.md) 给出密度与 rollout 约定，[06 的 exact-inversion 教程](docs/06-diffusion-history.md#与-exact-inversion-的对照) 给出从 toy model 到简单任务的实现路线。
+
+更完整的方法脉络与部署证据见 [06](docs/06-diffusion-history.md)。
