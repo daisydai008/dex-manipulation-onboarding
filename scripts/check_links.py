@@ -25,7 +25,7 @@ FILES = {
     "README.md", "docs/01-problem-structure.md",
     "docs/02-method-landscape.md", "docs/03-retargeting-to-policy.md",
     "docs/04-onpolicy-diffusion-interface.md", "docs/05-ppo-enhancement.md",
-    "docs/bibliography.md", "docs/diffusion-history/README.md",
+    "docs/bibliography.md", "docs/06-diffusion-history.md",
     "docs/regrind-integration.md", "scripts/check_links.py",
 }
 EXPECTED_FILES = len(FILES)
@@ -513,7 +513,7 @@ def local_checks():
             errors.append("不允许 symlink: " + str(relative))
         if path.is_file() or path.is_symlink():
             actual.add(str(relative))
-        elif path.is_dir() and str(relative) not in ("docs", "scripts", "docs/diffusion-history"):
+        elif path.is_dir() and str(relative) not in ("docs", "scripts"):
             errors.append("额外目录: " + str(relative))
     if actual != FILES:
         errors.append(f"结构不符: missing={sorted(FILES - actual)} extra={sorted(actual - FILES)}")

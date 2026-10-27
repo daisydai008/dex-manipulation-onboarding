@@ -13,7 +13,7 @@ Diffusion 在机器人学习中的用途，可以按“从哪里学习动作、�
 - **通过交互改进预训练策略**：把生成动作的去噪过程拆成可更新的步骤，用新交互得到的奖励继续训练，不必直接算出最终动作的概率密度（denoising-step PPO；[DPPO](docs/bibliography.md#dppo-2024)）。
 - **用可逆生成过程计算概率**：在生成过程满足可逆、密度可计算等条件时，反推出某个采样变量是怎样生成的，从而计算 PPO 更新所需的概率比；该变量不一定就是机器人执行的命令（exact-inversion；[04 概率对象](docs/04-onpolicy-diffusion-interface.md#概率对象)）。
 
-这些用途可以组合，不是必须依次采用的阶段。方法之间的区别与历史展开见 [diffusion 历史](docs/diffusion-history/README.md)。
+这些用途可以组合，不是必须依次采用的阶段。方法之间的区别与历史展开见 [diffusion 历史](docs/06-diffusion-history.md)。
 
 读这些路线前，先分清三个时间尺度。denoising step 是模型内部生成动作的迭代，不是机器人控制步；action prediction horizon `T_p` 是一次生成的动作段长度，action execution horizon `T_a` 是其中实际执行的前缀长度。Action chunk 指这一段动作，receding horizon 指执行前缀后取得新观测、再生成下一段：
 
@@ -21,7 +21,7 @@ Diffusion 在机器人学习中的用途，可以按“从哪里学习动作、�
 最近观测 → 生成 T_p 步动作（一个 action chunk）→ 执行前 T_a 步 → 新观测 → 重新生成
 ```
 
-DPPO 的 PPO ratio 也不是在整段动作上求一个边缘密度，而是在每个 Gaussian 去噪转移上比较新旧策略。下面的数学展开见 [diffusion 历史](docs/diffusion-history/README.md)。
+DPPO 的 PPO ratio 也不是在整段动作上求一个边缘密度，而是在每个 Gaussian 去噪转移上比较新旧策略。下面的数学展开见 [diffusion 历史](docs/06-diffusion-history.md)。
 
 ## 关键术语
 
@@ -112,6 +112,6 @@ Diffusion 也可用于生成抓取候选，而不必直接生成连续控制动�
 - [03 Retargeting 到 policy](docs/03-retargeting-to-policy.md)：已有运动轨迹，需要判断怎样用于训练、怎样检查接触可行性时读。
 - [04 On-policy diffusion 接口](docs/04-onpolicy-diffusion-interface.md)：准备实现路线 1、2，或核对 residual 的概率与执行记录时读。
 - [05 PPO 增强](docs/05-ppo-enhancement.md)：已有训练结果，需要定位失败原因或设计隔离实验时读。
-- [Diffusion 历史](docs/diffusion-history/README.md)：需要进一步区分 imitation、offline RL 与 on-policy 方法时读。
+- [06 Diffusion 历史](docs/06-diffusion-history.md)：需要进一步区分 imitation、offline RL 与 on-policy 方法时读。
 - [REGRIND 对接思路](docs/regrind-integration.md)：需要把生成式策略用于 REGRIND 的 reference、residual 或部署扰动试验时读；文末附仓库维护检查。
 - [注释书目](docs/bibliography.md)：需要查某篇论文解决的问题、所做实验与原文来源时读。
