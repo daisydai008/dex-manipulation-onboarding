@@ -97,11 +97,9 @@ Diffusion 也可用于生成抓取候选，而不必直接生成连续控制动�
 
 ## 使用与证据约定
 
-书目中的真机灵巧手 diffusion 工作覆盖了不同的数据与控制方式：[DexVLA](docs/bibliography.md#dexvla-2025) 研究跨形态动作学习，[DexWild](docs/bibliography.md#dexwild-2025)、[DexUMI](docs/bibliography.md#dexumi-2025)、[DexCast](docs/bibliography.md#dexcast-2026)、[Human2Dex](docs/bibliography.md#human2dex-2026) 利用人类示范训练策略，[SkillWeave](docs/bibliography.md#skillweave-2026) 组合多个技能。
+书目中的真机灵巧手 diffusion 工作覆盖了不同的数据与控制方式：[DexVLA](docs/bibliography.md#dexvla-2025) 研究跨形态动作学习，[DexWild](docs/bibliography.md#dexwild-2025)、[DexUMI](docs/bibliography.md#dexumi-2025)、[DexCast](docs/bibliography.md#dexcast-2026)、[Human2Dex](docs/bibliography.md#human2dex-2026) 利用人类示范训练策略，[SkillWeave](docs/bibliography.md#skillweave-2026) 组合多个技能。这些工作主要使用 imitation learning，不涉及 on-policy ratio。
 
-[MoDex](docs/bibliography.md#modex-2026) 进一步使用 DPPO fine-tuning，并报告顺序抓取策略在 Allegro 上的 zero-shot 部署，这与在真机上在线训练或完成 in-hand 重定向不是同一结果。
-
-【论文直接验证】指所引论文实际做过的实验；【机制相关】表示方法可作参照；【需新证据】与【推测】标出尚待检验的应用或解释，各篇的具体实验范围见 [注释书目](docs/bibliography.md#证据约定)。
+[MoDex](docs/bibliography.md#modex-2026) 则先在仿真中使用 DPPO fine-tuning，再报告 Allegro 真机上对 OOD 物体的 zero-shot 部署。其任务是顺序多物体抓取，不是 in-hand 重定向，也不是在真机上在线训练。各篇论文的具体实验设置与证据范围见 [注释书目](docs/bibliography.md#证据约定)。
 
 ## 文件导航
 
