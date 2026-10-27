@@ -13,7 +13,7 @@ z = Fθ⁻¹(ξ;c)
 log qθ(ξ|c) = log p₀(z|c) − log |det D_z Fθ(z;c)|
 ```
 
-【条件推导】exact density 仅指该模型的密度公式可求值，不表示不存在数值误差或已知执行动作密度。若执行动作 `u=g(c,ξ)`，多对一的 `g` 通常要对原像积分才能得到 `pθ(u|c)`；不能把某个 `ξ` 的 `qθ(ξ|c)` 直接命名为 `pθ(u|c)`。实现仍需检查 inverse round-trip、Jacobian 求值、支持集及浮点误差；这些是条件验证，不是已有 sampler 性能事实。
+【条件推导】exact density 仅指该模型的密度公式可求值；数值误差仍需单独检查，执行动作的密度则需根据 `u=g(c,ξ)` 的映射另行确定。若 `g` 多对一，通常要对原像积分才能得到 `pθ(u|c)`；不能把某个 `ξ` 的 `qθ(ξ|c)` 直接命名为 `pθ(u|c)`。实现仍需检查 inverse round-trip、Jacobian 求值、支持集及浮点误差；这些是条件验证，不是已有 sampler 性能事实。
 
 【论文直接验证】DPPO 提供另一种明确的 on-policy 概率对象。[dppo-2024](bibliography.md#dppo-2024) v3 §4.1 Eq. (4.1)–(4.4)、§4.2 Eq. (4.5)–(4.8) 在扩展 state `(s,a^{k+1})` 上使用 Gaussian denoising transition 的 likelihood 形成 PPO 更新，不要求求出最终 action chunk 的边缘密度；§4.3 还分别给出采样时与 Gaussian likelihood 求值时不同的 denoising noise 下限（σ^exp_min 与 σ^prob_min）。该方法不是上述可逆变换条件已满足的证据。
 
@@ -46,7 +46,7 @@ D_KL(qold || qθ | c) = E_{ξ~qold(·|c)}[log qold(ξ|c) − log qθ(ξ|c)]
 
 【条件推导】固定 base controller、residual scale 与 clipping 不因非可逆而自动破坏 auxiliary-space PPO。例如 `u=clip(b(s)+αξ)` 可作为 `g`，前提是 `b`、`α`、clipping 规则与相关 controller 状态转移不依赖待更新参数，并保存原始 `ξ`。被否定的是“auxiliary density 就是 executed-action density”的解释，而不是 residual composition 本身；[residual-rl-2018](bibliography.md#residual-rl-2018) 只提供 control-signal superposition 的独立工程动机，不是本推导的实验验证。
 
-【条件推导】带内部状态的 controller/filter 必须作为环境动力学的一部分描述。若状态 `h_t` 会影响执行 command，应明确 `(s_t,h_t)` 的转移和 reset；policy 若使用该状态，则还须在 conditioning 中保存或可重建。把有记忆 controller 当作仅依赖当前 observation 的无状态函数，会遗漏本推导的前提。
+【条件推导】带内部状态的 controller/filter 必须作为环境动力学的一部分描述。若状态 `m_t` 会影响执行 command，应明确 `(s_t,m_t)` 的转移和 reset；policy 若使用该状态，则还须在 conditioning 中保存或可重建。把有记忆 controller 当作仅依赖当前 observation 的无状态函数，会遗漏本推导的前提。
 
 【需新证据】固定 mapping 推导不覆盖 controller 与 actor 共同学习，也不允许随意复用过期 rollout。更新 reference、base controller、normalization、safety filter 或其内部状态规则后，旧数据未必仍来自相同环境和 conditioning 契约；仅保存 old log-prob 不能修正这些变化。面向 REGRIND 的 reference-conditioned residual 因而是适配假设，需先按 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟) 验证可执行性，再验证概率记录。
 
@@ -56,23 +56,25 @@ D_KL(qold || qθ | c) = E_{ξ~qold(·|c)}[log qold(ξ|c) − log qθ(ξ|c)]
 
 【官方工程文档】registry 事实统一固定在 Isaac Lab v2.2.0 的 `Available Environments — Isaac Lab Documentation` 页面。下列链接各自绑定官方 hostname、版本 path、该 page title 与 section fragment；该页只支持环境 ID、任务描述及列出的动作接口，不承担 actor-gain 或默认维度证据。
 
+三个任务共用一套比较协议：先建立 Gaussian baseline，再替换 actor，并固定 reward、reset、observation、action semantics、训练数据与 seed。若 actor、update schema、pretraining 同时改变，结果按组合方案归因。
+
 ### Shadow Hand cube reorientation：灵巧主任务
 
 【官方工程文档】`Isaac-Repose-Cube-Shadow-Direct-v0` 在 [Isaac Lab v2.2.0 / manipulation](https://isaac-sim.github.io/IsaacLab/v2.2.0/source/overview/environments.html#manipulation) 列为 Shadow hand 的 cube in-hand reorientation。这里使用这一精确 ID，不与 OpenAI-FF、OpenAI-LSTM 或 vision 变体混用，也不从名称推断 sensor specification、state/action 维度或部署配置。
 
-【机制相关】【需新证据】选择该任务是为了直接观察多指接触下的姿态控制与掉落，而不是把更广泛的 arm-hand 能力当作已覆盖。先建立 Gaussian baseline，再替换 actor；两组固定 reward、reset、observation（含 privileged split/history/delay）、action semantics、训练数据与 seed，比较预定义姿态成功率、掉落率、environment interactions、wall-clock 与 inference latency。若 actor、update schema、pretraining 同时改变，结果只能归因于组合；更换初始 grasp、物体或 reference 后须重新建立 baseline。
+【机制相关】【需新证据】选择该任务是为了直接观察多指接触下的姿态控制与掉落，而不是把更广泛的 arm-hand 能力当作已覆盖。两组在共用协议下固定 observation（含 privileged split/history/delay），比较预定义姿态成功率、掉落率、environment interactions、wall-clock 与 inference latency；更换初始 grasp、物体或 reference 后须重新建立 baseline。
 
 ### Franka cube lift：较简单 manipulation 接口
 
 【官方工程文档】`Isaac-Lift-Cube-Franka-v0` 在 [Isaac Lab v2.2.0 / manipulation](https://isaac-sim.github.io/IsaacLab/v2.2.0/source/overview/environments.html#manipulation) 列为 Franka cube lift，并明确是 joint position control。该 ID 不是 IK-Abs 或 IK-Rel 变体；接口核验不能由动作名称相似替代。
 
-【机制相关】【需新证据】选择该任务是为了在不同于多指重定向的 manipulation 设置下检查采样、command 与奖励闭环。先建立 Gaussian baseline，再替换 actor；固定 reward、reset、observation、action semantics、训练数据与 seed，预定义 lift success 和掉落事件，报告成功率/掉落率、environment interactions、wall-clock 与 inference latency。若 actor、update schema、pretraining 同时改变，只能归因于组合；通过该检查不构成灵巧手迁移证据。
+【机制相关】【需新证据】选择该任务是为了在不同于多指重定向的 manipulation 设置下检查采样、command 与奖励闭环。两组在共用协议下预定义 lift success 和掉落事件，报告成功率/掉落率、environment interactions、wall-clock 与 inference latency；通过该检查不构成灵巧手迁移证据。
 
 ### Ant：优化实现对照
 
 【官方工程文档】`Isaac-Ant-v0` 在 [Isaac Lab v2.2.0 / classic](https://isaac-sim.github.io/IsaacLab/v2.2.0/source/overview/environments.html#classic) 列为 MuJoCo ant robot 的定向运动任务。这里选 manager-based ID，不与 `Isaac-Ant-Direct-v0` 混用。
 
-【机制相关】【需新证据】选择 Ant 是为了检查 ratio、entropy/KL 估计与优化控制在非 manipulation 任务中的行为，而不是把 locomotion 成绩当作抓取证据。先建立 Gaussian baseline，再替换 actor；固定 reward、reset、observation、action semantics、训练数据与 seed，事先定义任务指标（如该配置的 episodic return、目标方向位移与 episode length），并报告 environment interactions、wall-clock、inference latency 和 KL/clip fraction；掉落率记 N/A。若 actor、update schema、pretraining 同时改变，只能归因于组合；不把 Ant return 与两个 manipulation 任务做统一排名。
+【机制相关】【需新证据】选择 Ant 是为了检查 ratio、entropy/KL 估计与优化控制在非 manipulation 任务中的行为，而不是把 locomotion 成绩当作抓取证据。两组在共用协议下事先定义任务指标（如该配置的 episodic return、目标方向位移与 episode length），并报告 environment interactions、wall-clock、inference latency 和 KL/clip fraction；掉落率记 N/A，Ant return 与两个 manipulation 任务分别报告。
 
 【需新证据】任务协议还应分开交互预算和计算预算。每个任务报告固定 interactions 下的结果和固定 wall-clock 下的结果，注明硬件、batch、denoising steps、action horizon、初始化/预训练来源及预算耗尽条件；action horizon 与 denoising horizon 是不同维度，参见 [dppo-2024](bibliography.md#dppo-2024) v3 §3、§4.3。更换这些条件后，不能将差异单独归因于 density 计算方式。
 

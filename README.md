@@ -21,7 +21,7 @@ Diffusion 在机器人学习中的用途，可以按“从哪里学习动作、�
 最近观测 → 生成 T_p 步动作（一个 action chunk）→ 执行前 T_a 步 → 新观测 → 重新生成
 ```
 
-DPPO 的 PPO ratio 作用于每个 Gaussian 去噪转移，用同一转移的新旧策略 log-prob 之比形成更新。下面的数学展开见 [diffusion 历史](docs/06-diffusion-history.md)。
+DPPO 的 PPO ratio 作用于每个 Gaussian 去噪转移，用同一转移的新旧策略 log-prob 之比形成更新。数学展开见 [diffusion 历史](docs/06-diffusion-history.md)。
 
 ## 关键术语
 
@@ -36,7 +36,7 @@ DPPO 的 PPO ratio 作用于每个 Gaussian 去噪转移，用同一转移的新
 
 ## 起步路线
 
-灵巧操作研究既要解决动作怎样表示和改进，也要处理接触执行与训练数据。下面从这四类问题出发，介绍已有工作的应用场景、解决方法，以及可以继续研究的方向。
+这四类问题分别对应四组研究方法与实验切入点，每节先说明相关研究如何使用该类方法，再给出可执行的实验建议。
 
 ```text
 动作表示：同一观测下有多种可行动作 -> 路线 1：比较 Gaussian 与生成式 actor
@@ -97,9 +97,9 @@ Diffusion 也可把生成目标限定为抓取候选。[DexDiffuser](docs/biblio
 
 ## 使用与证据约定
 
-书目中的真机灵巧手 diffusion 工作覆盖了不同的数据与控制方式：[DexVLA](docs/bibliography.md#dexvla-2025) 研究跨形态动作学习，[DexWild](docs/bibliography.md#dexwild-2025)、[DexUMI](docs/bibliography.md#dexumi-2025)、[DexCast](docs/bibliography.md#dexcast-2026)、[Human2Dex](docs/bibliography.md#human2dex-2026) 利用人类示范训练策略，[SkillWeave](docs/bibliography.md#skillweave-2026) 组合多个技能。这些工作以 imitation learning 为主，on-policy 证据主要来自下文的 MoDex。
+真机灵巧手 diffusion 部署可按跨形态学习、人类示范模仿和技能组合分类，逐篇综述见 [06 已发表的真机灵巧手部署](docs/06-diffusion-history.md#已发表的真机灵巧手部署)。
 
-[MoDex](docs/bibliography.md#modex-2026) 则先在仿真中使用 DPPO fine-tuning，再报告 Allegro 真机上对 OOD 物体的 zero-shot 部署。其任务范围是顺序多物体抓取，训练阶段在仿真中完成，真机阶段采用 zero-shot 部署；后续实验可进一步评估 in-hand 重定向和真机在线训练。各篇论文的具体实验设置与证据范围见 [注释书目](docs/bibliography.md#证据约定)。
+其中与 on-policy 最接近的案例是 [MoDex](docs/bibliography.md#modex-2026)：先在仿真中使用 DPPO fine-tuning，再在 Allegro 真机上对 OOD 物体 zero-shot 部署。其任务范围是顺序多物体抓取，后续实验可进一步评估 in-hand 重定向和真机在线训练。各篇论文的具体实验设置与证据范围见 [注释书目](docs/bibliography.md#证据约定)。
 
 ## 文件导航
 

@@ -42,7 +42,7 @@ Baseline 问题是 sparse success 或高维接触探索导致从零学习成本�
 
 【机制相关】【推测】所需数据是 observation/action 一致的 robot demonstrations，改动接口是 BC initialization 或辅助 imitation loss。面向 REGRIND 的适配假设是先用经过动力学校验的 retargeted trajectory，再比较初始化与持续 imitation regularization；reference 不能直接被当作已成功的 expert action，数据前置条件见 [03](03-retargeting-to-policy.md#用途一bc-数据)。
 
-【需新证据】【推测】隔离评估应比较无示范、只初始化、持续辅助损失三种设置，固定 demonstration 数量、质量与 interaction budget。记录初始成功率、后续提升、偏离 reference 后恢复能力和 demo-overfitting，依据 [dapg-2018](bibliography.md#dapg-2018) 只提出路线，不承诺 PPO 或 REGRIND 的收益。
+【需新证据】【推测】隔离评估应比较无示范、只初始化、持续辅助损失三种设置，固定 demonstration 数量、质量与 interaction budget。记录初始成功率、后续提升、偏离 reference 后恢复能力和 demo-overfitting；该比较沿用 [dapg-2018](bibliography.md#dapg-2018) 的 demonstration 思路，PPO 与 REGRIND 的收益由实验结果判定。
 
 ### Base controller 与 residual
 
@@ -54,11 +54,11 @@ Baseline 问题是位置级 reference 的几何匹配不能消除真实接触与
 
 ### Tracking、RSI 与 demonstration-led reset
 
-Baseline 问题是长 reference 的早期失败让策略无法接触后续状态，而单纯 imitation objective 可能压制任务完成。【论文直接验证】[deepmimic-2018](bibliography.md#deepmimic-2018) 的 abstract 支持 motion imitation 与 task objective，[demostart-2024](bibliography.md#demostart-2024) 支持 sparse reward、少量 simulation demonstrations 与 auto-curriculum；两篇的具体 RSI/reset 算法均不在本导读的 abstract 证据内。
+Baseline 问题是长 reference 的早期失败使后续 phase 缺少训练样本，而单纯 imitation objective 可能压制任务完成。【论文直接验证】[deepmimic-2018](bibliography.md#deepmimic-2018) 的 abstract 支持 motion imitation 与 task objective，[demostart-2024](bibliography.md#demostart-2024) 支持 sparse reward、少量 simulation demonstrations 与 auto-curriculum；两篇的具体 RSI/reset 算法均不在本导读的 abstract 证据内。
 
 【机制相关】【推测】所需数据是 phase-aligned reference、可恢复的 joint/object state 与成功信号；改动接口分别是 reference observation、tracking reward 和 reset sampler。面向 REGRIND 的适配假设是将 RSI 作为“从 reference 不同阶段初始化”的候选思想，不宣称已核验 DeepMimic 的 RSI 细节；reference state 的接触一致性检查与 [03](03-retargeting-to-policy.md#用途二tracking-reference-与-rsi) 一致。
 
-【需新证据】【推测】隔离评估应固定 actor，分别改变 tracking reward 和 reset distribution，不同时加入二者后归因于课程。对固定部署初始状态报告 end-to-end success，同时报告各 phase 的条件成功率、reset 可行率和 reference error，避免把 [demostart-2024](bibliography.md#demostart-2024) 的课程启发误写为已解决长时手部接触。
+【需新证据】【推测】隔离评估应固定 actor，分别改变 tracking reward 和 reset distribution。只有二者单独消融后，才把结果归因于对应接口；若同时加入二者，报告应标为组合方案。对固定部署初始状态报告 end-to-end success，同时报告各 phase 的条件成功率、reset 可行率和 reference error，避免把 [demostart-2024](bibliography.md#demostart-2024) 的课程启发误写为已解决长时手部接触。
 
 ### Split-and-aggregate 数据聚合
 
@@ -84,7 +84,7 @@ Baseline 问题是增加环境数量可能改变每次更新的时序长度、�
 
 【机制相关】【推测】所需信号是 environment steps/s、simulation/actor/update 分段耗时、rollout length 与显存占用；改动接口是 environment batching、rollout collection 与 minibatch schedule。面向 REGRIND 的适配假设是先测接触仿真、actor inference 或优化器哪一项主导耗时，再调整并行数，而不只以 GPU utilization 作为目标。
 
-【需新证据】【推测】隔离评估应同时进行固定 total samples 的并行规模实验和固定 wall-clock 的效率实验。保持 reference/reset、task distribution 与 actor 不变，记录 task success、吞吐和时序 credit assignment 的变化；依据 [massively-parallel-2021](bibliography.md#massively-parallel-2021) 只提出测量设计，课程收益另行评估。
+【需新证据】【推测】隔离评估应同时进行固定 total samples 的并行规模实验和固定 wall-clock 的效率实验。保持 reference/reset、task distribution 与 actor 不变，记录 task success、吞吐和时序 credit assignment 的变化；该设计借鉴 [massively-parallel-2021](bibliography.md#massively-parallel-2021) 的并行与课程机制，吞吐和课程收益分别报告。
 
 ### Domain randomization 与 ADR
 
@@ -96,7 +96,7 @@ Baseline 问题是仿真视觉或动力学分布过窄会使部署性能不稳�
 
 ### 多任务并行与 reference 课程
 
-Baseline 问题是多任务数据可能竞争 shared capacity，而不是把单任务环境直接并排即可获得多技能。【论文直接验证】[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 的 abstract 报告多数 multi-task/few-shot 设置失败；[demostart-2024](bibliography.md#demostart-2024) 的课程成功不能抵消该证据范围。
+Baseline 问题是多任务数据可能竞争 shared capacity，而不是把单任务环境直接并排即可获得多技能。【论文直接验证】[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 的 abstract 报告多数 multi-task/few-shot 设置失败；[demostart-2024](bibliography.md#demostart-2024) 的课程结果不改变该 multi-task 限制。
 
 【机制相关】【推测】所需信号是 task/reference ID、各任务成功率、reset 难度和采样比例；改动接口是 task-conditioned observation、reset scheduler 与 sampling weights。面向 REGRIND 的适配假设是先在单 reference 证明闭环可行，再逐步扩展物体/轨迹，避免在算法与任务分布同时改变时声称增强有效。
 
@@ -106,4 +106,4 @@ Baseline 问题是多任务数据可能竞争 shared capacity，而不是把单�
 
 【机制相关】【推测】选型顺序应先确认 baseline 的观测、动作与 update 记录正确，再按瓶颈选择一个方向。成功示范足够时优先比较 imitation 初始化，几何 reference 可用但动力学偏差明显时比较 residual，探索覆盖不足时比较 reset curriculum，吞吐扩展饱和时比较 aggregation；只有在共同数据和 update 口径固定后，才把 [dppo-2024](bibliography.md#dppo-2024) 或 [04](04-onpolicy-diffusion-interface.md#概率对象) 中满足条件的模型作为 actor 候选。这是基于上述证据的条件选择，不是优劣排名。
 
-【需新证据】【推测】每次实验都应有明确的停止条件和复核节点。若原始 action/log-prob 不一致、reference reset 物理不可行、部署观测不可得或 compute budget 不支持目标控制周期，应先修复接口而不是继续叠加增强；若改善只出现在训练 reward 而非固定测试 task success，则保留负结果。该评估原则呼应 [implementation-matters-2020](bibliography.md#implementation-matters-2020) 的归因问题，不构成本仓库外的代码实施授权。
+【需新证据】【推测】每次实验都应有明确的停止条件和复核节点。若原始 action/log-prob 不一致、reference reset 物理不可行、部署观测不可得或 compute budget 不支持目标控制周期，应先修复接口而不是继续叠加增强；若改善只出现在训练 reward 而非固定测试 task success，则保留负结果。该评估原则呼应 [implementation-matters-2020](bibliography.md#implementation-matters-2020) 的归因问题，具体实验以各章接口约定为准。

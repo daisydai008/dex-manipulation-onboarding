@@ -8,7 +8,7 @@
 
 【机制相关】首个实验应固定任务契约，而不是只给一个 benchmark 名称。按 [01](01-problem-structure.md#任务谱系) 写明 in-hand、grasp acquisition、arm-hand、双手或 long-horizon 的目标，定义 success、掉落、超时和恢复行为，记录初始接触状态、测试物体与部署初始分布；未明确这些条件时，不比较论文回报数字。
 
-【机制相关】【需新证据】观测与动作契约应横贯所有方法族。分别记录 actor/critic 的 privileged state、视觉、proprioception、tactile、history/recurrence、采样时间与 delay，未知项记“未报告”；动作要明确 target/delta/velocity/torque、control rate、action chunk 与执行 mapping。若部署不可获得训练输入，应先解决感知或接口不一致，不能由 actor 容量更大推断问题消失；证据范围见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
+【机制相关】【需新证据】观测与动作契约应横贯所有方法族。分别记录 actor/critic 的 privileged state、视觉、proprioception、tactile、history/recurrence、采样时间与 delay，未知项记“未报告”；动作要明确 target/delta/velocity/torque、control rate、action chunk 与执行 mapping。若部署阶段缺少训练时使用的输入，应先修复感知或接口；随后再用对照实验判断 actor 容量是否影响任务表现，避免把感知缺口误当成容量问题。证据范围见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
 
 ## 资源盘点
 
@@ -22,7 +22,7 @@
 
 【机制相关】【需新证据】几何贴合但物体滑落，优先定位接触与控制问题。按 phase 记录 reference error、object motion、接触失败、base-only 成功与 residual 饱和，检查 reference/base/feasible reset，而不是立即替换 actor；若早期失败导致后续 phase 几乎无采样，再单独评估 phase resets/curriculum，并始终用固定部署初始状态报告 end-to-end success，见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
 
-【需新证据】只有在数据与更新口径一致之后，才能把动作表示不足作为候选解释提出。观察相同条件下的成功动作是否存在多种模式、imitation 的闭环恢复是否失败，以及 Gaussian baseline 的问题是否仍存在；多模态数据本身不能证明 diffusion 会提高 task success。若主要耗时在 simulator 而非 actor/update，先测吞吐分段而不是换生成模型；实验拆分见 [05](05-ppo-enhancement.md)。
+【需新证据】只有在数据与更新口径一致之后，才能把动作表示不足列为候选解释。观察相同条件下的成功动作是否存在多种模式、imitation 的闭环恢复是否失败，以及 Gaussian baseline 的问题是否仍存在；多模态数据本身不能证明 diffusion 会提高 task success。若主要耗时在 simulator 而非 actor/update，先测吞吐分段而不是换生成模型；实验拆分见 [05](05-ppo-enhancement.md)。
 
 ## 候选选择：五个方法族
 
@@ -35,7 +35,7 @@
 - 收益预期：【需新证据】建立从交互学习的控制基线，测试扰动下的 task success，不预设 sample efficiency。
 - 代价：接触仿真、奖励定义、randomization 校准、交互预算与部署验证。
 - 证据范围：[openai-inhand-2020](bibliography.md#openai-inhand-2020)、[dextreme-2022](bibliography.md#dextreme-2022) 的 abstract 支持各自系统的 sim-to-real；[massively-parallel-2021](bibliography.md#massively-parallel-2021) 的并行证据来自 locomotion，不能直接转为手部加速比。
-- 不适用情形：reset 物理不可行、部署观测不可得，或仍未定义成功指标；这些问题不是扩大训练规模能确认解决的。
+- 不适用情形：reset 物理不可行、部署观测不可得，或成功指标尚未定义；出现这些情况时，应先修复 reset、部署观测或成功指标，再评估扩大训练规模的收益。
 - 最小对照：【机制相关】【需新证据】先固定任务测 Gaussian PPO；只改变一个 randomization family 或并行规模，分别按 interactions 与 wall-clock 报告结果。
 
 ### 遥操作与数据采集
@@ -90,4 +90,4 @@
 
 【需新证据】首个实验只回答一个可证伪的问题。写明失败信号、候选解释、唯一改动接口、共同数据/环境配置、seed 列表、interactions 与 wall-clock 上限、部署 latency 限制及事先定义的成功判据；输出 baseline 与对照的 per-seed 结果、失败类型和预算消耗，不用单次最高 return 选方法。具体记录与任务用途见 [04](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证) 和 [05](05-ppo-enhancement.md#评估顺序与停止条件)。
 
-【机制相关】【需新证据】停止条件应区分接口错误与实验负结果。遇到 log-prob 不一致、不可行 reset、部署输入不可得或 latency 超预算，停止追加训练并修复接口；若预算耗尽且预定义 task metric 未改善，保留负结果，不追加其他模块后声称原假设成立。若只改善训练 reward 而不改善固定测试分布的 success，应重查 reward 与任务目标的对应关系。
+【机制相关】【需新证据】停止条件应区分接口错误与实验负结果。遇到 log-prob 不一致、不可行 reset、部署输入不可得或 latency 超预算，停止追加训练并修复接口；若预算耗尽且预定义 task metric 未改善，保留负结果，并把后续改动作为新的实验假设另行评估。若只改善训练 reward 而不改善固定测试分布的 success，应重查 reward 与任务目标的对应关系。

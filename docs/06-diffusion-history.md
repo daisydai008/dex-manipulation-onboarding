@@ -1,6 +1,8 @@
 # 06 生成式策略与 on-policy RL：方法脉络与选择
 
-本章回答两个问题：已发表工作怎样把 diffusion 用于动作学习和 PPO 更新，以及在灵巧手场景中下一步怎样选择实验。各篇论文的版本与实验范围见 [注释书目](bibliography.md)。
+> 本章回答：生成式策略怎样从 imitation 走到 on-policy 更新，以及 Gaussian PPO、DPPO 与 exact-inversion 各适合什么前提。读完能根据数据、sampler 与计算条件选择实验路线。对应路线：路线 1、2 的概率与更新机制，路线 3、4 的部署参照。
+
+本章梳理生成式策略从动作学习到 PPO 更新的技术脉络，并给出灵巧手场景的实验选择。各篇论文的版本与实验范围见 [注释书目](bibliography.md)。
 
 ## Diffusion Policy：从示范学习动作段
 
@@ -15,13 +17,13 @@ A_t^k = √(ᾱ_k) A_t^0 + √(1−ᾱ_k) ε,   ε ~ N(0, I)
 L = E || ε − ε_θ(A_t^k, k, O_t) ||²
 ```
 
-推理时从 `A_t^K ~ N(0,I)` 出发，反复用 `ε_θ` 和 scheduler 计算下一步较少噪声的样本，最终得到动作段 `A_t^0`。`K` 记录模型内部的 denoising 迭代，`T_p` 记录动作预测长度，两个指标分别描述生成过程与控制时序。
+推理时从 `A_t^K ~ N(0,I)` 出发，反复用 `ε_θ` 和 scheduler 计算下一步较少噪声的样本，最终得到动作段 `A_t^0`。`K` 表示模型内部的 denoising 迭代步数，`T_p` 表示动作预测长度，两个指标分别描述生成过程与控制时序。
 
 执行时只取动作段的前 `T_a` 步，然后读取新观测并重新预测。Action chunk 是一次预测的动作段，receding horizon 是“执行前缀—重新观测—再次预测”的控制循环；论文 v5 §2.3 定义了这三个 horizon，§4.3 讨论执行长度带来的动作一致性与响应速度折中。
 
 ## Offline RL：用价值函数筛选动作
 
-[Diffusion-QL](bibliography.md#diffusion-ql-2022) 在 conditional diffusion loss 中加入 action-value 最大化项，使策略在接近行为数据的同时偏向高价值动作。[IDQL](bibliography.md#idql-2023) 从 diffusion behavior policy 采样，再按 critic 权重做 importance sampling，得到目标策略。两者都在静态数据集上训练，更新依据来自数据集与价值函数。
+[Diffusion-QL](bibliography.md#diffusion-ql-2022) 在 conditional diffusion loss 中加入 action-value 最大化项，使策略在接近行为数据的同时偏向高价值动作。[IDQL](bibliography.md#idql-2023) 从 diffusion behavior policy 采样，再按 critic 权重做 importance sampling，得到目标策略。两者都在静态数据集上训练，适合已有数据、暂不进行在线交互的场景；它们与 DPPO 的在线 fine-tuning 解决不同阶段的问题。
 
 ## On-policy 更新的概率难题
 
@@ -52,7 +54,7 @@ DPPO 的工程代价也来自这一构造。除了 interactive environment、rew
 
 ## 推荐方向
 
-从 Gaussian PPO baseline 开始，先确认任务、奖励和观测是否可学，并建立成功率、交互量与延迟的参照。出现明确的动作表示瓶颈，或已有可复用的 diffusion policy 时，再评估 DPPO 的额外复杂度是否值得。
+从 Gaussian PPO baseline 开始，先确认在该奖励与观测条件下任务是否可学，并建立成功率、交互量与延迟的参照。出现明确的动作表示瓶颈，或已有可复用的 diffusion policy 时，再评估 DPPO 的额外复杂度是否值得。
 
 已有 demonstrations 和可交互仿真环境时，可以采用“BC 预训练 → DPPO 仿真 fine-tune → 固定初始状态评估”的顺序。评估应固定 reward、reset、observation、action semantics 和 seed，报告成功率、恢复行为、交互量、显存、更新耗时与推理延迟，并与同条件的 Gaussian PPO 对照。选择依据是概率对象与计算预算；sampler 可逆且需要最终动作的精确密度时，可将 exact-inversion 作为候选路线。
 

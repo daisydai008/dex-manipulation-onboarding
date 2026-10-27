@@ -1,6 +1,6 @@
 # 01 问题结构
 
-> 本章回答：灵巧操作该按什么维度拆开比较，为什么不能只看手的自由度或算法名。读完能判断一个任务属于哪个谱系、观测是否部分可观测、所用硬件/benchmark 能否与文献横向比较。对应路线：所有路线的任务与观测前提。
+> 本章回答：灵巧操作该按什么维度拆开比较，以及为什么需要同时记录任务、观测与执行接口。读完能判断一个任务属于哪个谱系、需要记录哪些观测与硬件条件，以及所用 benchmark 能否与文献横向比较。对应路线：所有路线的任务与观测前提。
 
 Dexterous manipulation 需要先按任务、观测与执行接口分解，不能只按手的自由度或算法名称比较。本导读用 [注释书目](bibliography.md) 中已限定来源的证据说明差异；未由所据 abstract 或指定全文给出的配置记为“未报告”。
 
@@ -18,7 +18,7 @@ Long-horizon 组合的困难包括子任务之间的可达性和失败恢复。[
 
 ## 观测与部分可观测性
 
-Observation modality 是所有方法族的横切变量，不是算法附注。视觉、proprioception、tactile、privileged simulator state 应分别记录 actor 与 critic 能看到什么；【需新证据】【推测】若训练 actor 可直接访问真实部署不可得的物体状态，就必须补充 state estimator 或训练/部署观测一致性实验，不能用更强 actor 参数化代替感知验证。
+Observation modality 是所有方法族的横切变量，不是算法附注。视觉、proprioception、tactile、privileged simulator state 应分别记录 actor 与 critic 能看到什么；【需新证据】【推测】若 actor 在训练时可直接访问部署阶段无法获得的物体状态，就必须补充 state estimator 或训练/部署观测一致性实验，不能用更强 actor 参数化代替感知验证。
 
 已核验的视觉证据有明确范围。[dextreme-2022](bibliography.md#dextreme-2022) 比较 vision policy 与 privileged motion-capture state，[visual-dexterity-2022](bibliography.md#visual-dexterity-2022) 使用单 depth camera，[demostart-2024](bibliography.md#demostart-2024) 使用多相机 raw pixels 和 proprioception；abstract 未报告它们完整的 actor/critic privileged split、history 长度或端到端延迟。
 
@@ -38,6 +38,6 @@ Bi-DexHands 的大规模 simulation 证据不等于多任务已经解决。[bi-d
 
 IsaacLab 任务族提供可复用仿真接口，但名字相近不保证 benchmark 一致。[isaac-lab-2023](bibliography.md#isaac-lab-2023) 的原文题名是 Orbit，不能凭稳定 ID 推断所有当前 IsaacLab API；固定版本的 registry ID 与任务用途见 [04](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证)，不从论文题名推断当前环境配置。
 
-【需新证据】【推测】跨论文比较前应逐项填写 hand-only/arm-hand、动作语义、初始状态、物体泛化与 sim/real 五类条件。动作是 position target、delta target、velocity 还是 torque；物体是否已在手中；测试是新初姿、新实例还是新形状；指标是在仿真、zero-shot 真机还是在线真机训练取得，任何一项未报告都应保留空缺而非按常见配置补全。
+【需新证据】【推测】跨论文比较前应逐项填写 hand-only/arm-hand、动作语义、初始状态、物体泛化与 sim/real 五类条件：动作是 position target、delta target、velocity 还是 torque；物体是否已在手中；测试是新初姿、新实例还是新形状；指标是在仿真、zero-shot 真机还是在线真机训练取得。任何一项未报告都应保留空缺，不按常见配置补全。
 
 下一步应先选择数据与策略的组合路径，再选择 actor 参数化；对应 [02 方法选择](02-method-landscape.md) 与 [03 retargeting 到 policy](03-retargeting-to-policy.md)。
