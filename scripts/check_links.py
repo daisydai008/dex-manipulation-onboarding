@@ -25,7 +25,7 @@ FILES = {
     "README.md", "docs/01-problem-structure.md",
     "docs/02-method-landscape.md", "docs/03-retargeting-to-policy.md",
     "docs/04-onpolicy-diffusion-interface.md", "docs/05-ppo-enhancement.md",
-    "docs/bibliography.md", "docs/06-diffusion-history.md",
+    "docs/bibliography.md", "docs/06-diffusion-history.md", "docs/appendix-probability.md",
     "docs/regrind-integration.md", "scripts/check_links.py", "scripts/README.md",
 }
 EXPECTED_FILES = len(FILES)

@@ -1,12 +1,12 @@
 # 注释书目
 
-本文件是入选作品的唯一逐篇注释位置；其他文档只通过稳定 paper ID 指向这里。除 [dppo-2024](#dppo-2024) 的机制说明、[diffusion-policy-2023](#diffusion-policy-2023) v5 §2.1–2.3 与 §4.3、[openai-inhand-2020](#openai-inhand-2020) Appendix C.1、[dextreme-2022](#dextreme-2022) §2.1 与官方 reset 实现、[visual-dexterity-2022](#visual-dexterity-2022) Summary 与 Results，以及七篇真机灵巧手 diffusion 部署条目（dexvla-2025、dexwild-2025、dexumi-2025、dexcast-2026、human2dex-2026、skillweave-2026、modex-2026）使用全文、指定章节或官方实现外，其余条目的证据上限是所记录版本的 abstract 与公开元数据，超出该范围的分析明确标为【推测】。书目不冻结，可经全文核实后新增。
+本文件是入选作品的唯一逐篇注释位置；其他文档只通过稳定 paper ID 指向这里。除 [dppo-2024](#dppo-2024) 的机制说明、[diffusion-policy-2023](#diffusion-policy-2023) v5 §2.1–2.3 与 §4.3、[openai-inhand-2020](#openai-inhand-2020) Appendix C.1、[dextreme-2022](#dextreme-2022) §2.1 与官方 reset 实现、[visual-dexterity-2022](#visual-dexterity-2022) Summary 与 Results、[deepmimic-2018](#deepmimic-2018) §5.1、§5.3、§6.1–6.2 与 §10.4，以及七篇真机灵巧手 diffusion 部署条目（dexvla-2025、dexwild-2025、dexumi-2025、dexcast-2026、human2dex-2026、skillweave-2026、modex-2026）使用全文、指定章节或官方实现外，其余条目的证据上限是所记录版本的 abstract 与公开元数据，超出该范围的分析明确标为【推测】。书目不冻结，可经全文核实后新增。
 
 ## 证据约定
 
 【论文直接验证】限定于条目列出的 abstract 或指定全文中的机制、任务与指标；【机制相关】只说明接口相关；【需新证据】表示目标组合或任务尚待验证。超出已查证据范围的分析另标【推测】；“后续核查”列出需要另查正文、官方实现或新实验的项目。
 
-【条件推导】用于列明前提后自足成立的数学关系，见 [04](04-onpolicy-diffusion-interface.md#概率对象)。它提供独立的推导依据，不能替代论文实验，也不证明任意 sampler 满足可逆性、change-of-variables 或 Jacobian 可计算条件，更不证明训练收益。
+【条件推导】用于列明前提后自足成立的数学关系，见 [概率基础附录](appendix-probability.md#概率对象)。它提供独立的推导依据，不能替代论文实验，也不证明任意 sampler 满足可逆性、change-of-variables 或 Jacobian 可计算条件，更不证明训练收益。
 
 【官方工程文档】只支持固定版本的 registry/interface 事实，不是 actor-gain 证据，也不计为新增论文。精确版本、URL、page title 和 fragment 随 [04 的任务设置](04-onpolicy-diffusion-interface.md#按检查目的选择任务) 记录；检查器从全部交付 Markdown 收集此类来源并核验最终 URL、状态、标题与 anchor。
 
@@ -471,10 +471,10 @@
 - authors-year：Peng 等，2018
 - arxiv：1804.02717v3
 - tier：extended
-- evidence：v3 abstract
+- evidence：v3 abstract；§5.1、§5.3、§6.1–6.2、§10.4
 - 解决什么问题：把 retargeted motion clip 转为可响应扰动、形态变化和任务目标的 physics-based policy。
 - 方法与信号是什么：联合 motion-imitation objective 与 task objective，并整合多个 clip 训练 multi-skill agent。
-- 验证到哪里及缺口：已覆盖证据：abstract 覆盖 human、Atlas、dinosaur、dragon 角色和多种动态技能。后续核查：灵巧手接触与 robot manipulation。
+- 验证到哪里及缺口：已覆盖证据：abstract 覆盖 human、Atlas、dinosaur、dragon 角色和多种动态技能；§5.1 将 phase variable 纳入 state features，§6.1 描述 RSI 的初始状态采样，§6.2 描述 early termination，§10.4 报告 RSI 与 early termination 的 ablation。后续核查：灵巧手接触与 robot manipulation。
 - 对两类读者有什么用：【推测】它支持 tracking reference 与 task reward 的概念链条，但把其 RSI 思想迁移到手部接触仍需新证据。
 - 主源：[arXiv v3](https://arxiv.org/abs/1804.02717v3)
 

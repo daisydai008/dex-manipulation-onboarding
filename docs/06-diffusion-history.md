@@ -65,7 +65,7 @@ log qθ(ξ|c) = log p₀(z|c) − log |det D_z Fθ(z;c)|
 
 对 rollout 中保存的同一个 `ξ`，旧策略与新策略分别执行自己的逆变换：`z_old=F_old⁻¹(ξ)`、`z_new=F_new⁻¹(ξ)`，再计算 `log q_old(ξ|c)` 与 `log q_new(ξ|c)`。两者取差得到 log-ratio，再通过 `r=exp(log q_new(ξ|c)−log q_old(ξ|c))` 得到 PPO ratio。两次逆变换得到的 latent 可以不同；必须保持一致的是采样变量 `ξ` 与 conditioning `c`。
 
-这个密度还可以用于估计 entropy 与 KL，但估计方式仍取决于样本来源和数值稳定性。可求值的 log-density 只提供输入，具体估计仍需按 [04 Entropy/KL 与优化控制](04-onpolicy-diffusion-interface.md#entropykl-与优化控制) 检查。
+这个密度还可以用于估计 entropy 与 KL，但估计方式仍取决于样本来源和数值稳定性。可求值的 log-density 只提供输入，具体估计仍需按 [概率基础附录的 Entropy/KL 与优化控制](appendix-probability.md#entropykl-与优化控制) 检查。
 
 ### 实现时需要验证什么
 

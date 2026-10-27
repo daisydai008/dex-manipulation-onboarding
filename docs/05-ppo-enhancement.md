@@ -30,7 +30,7 @@ PPO 的增强需要按改动接口分别评估。[ppo-2017](bibliography.md#ppo-
 
 更换 actor 同时涉及动作表示、概率求值和计算成本。[dppo-2024](bibliography.md#dppo-2024) v3 §4–5 报告 denoising-step PPO 与 demonstration fine-tuning，可以用于设计 Gaussian actor 的对照。若选择其他 auxiliary-action 模型，则需根据 sampler 结构验证可逆性和 exact density 条件，并在目标灵巧手任务上测量收益。
 
-采样与 rollout 记录应围绕所选概率对象实现。符合 [04 的 rollout 记录约定](04-onpolicy-diffusion-interface.md#rollout-记录) 的 auxiliary actor 保存原始辅助动作、old log-prob 和 conditioning；DPPO 保存能够重建 denoising trajectory likelihood 的扩展 state/action 信息。对 REGRIND，可以先固定 base/reference 与独立于待更新参数的执行 mapping，再调整 sampling、rollout schema 和 likelihood evaluation，具体约定见 [04](04-onpolicy-diffusion-interface.md#固定执行-mapping)。
+采样与 rollout 记录应围绕所选概率对象实现。符合 [概率基础附录的 rollout 记录约定](appendix-probability.md#rollout-记录) 的 auxiliary actor 保存原始辅助动作、old log-prob 和 conditioning；DPPO 保存能够重建 denoising trajectory likelihood 的扩展 state/action 信息。对 REGRIND，可以先固定 base/reference 与独立于待更新参数的执行 mapping，再调整 sampling、rollout schema 和 likelihood evaluation，具体约定见 [04](04-onpolicy-diffusion-interface.md#固定执行-mapping)。
 
 比较可以从同任务、同源 demonstrations 下的 Gaussian baseline 开始。分别控制 interactions 与 wall-clock，记录 inference latency、显存、更新耗时、成功率和恢复行为；actor、update schema 与 pretraining 同时改变时，按组合方案解释结果。[dppo-2024](bibliography.md#dppo-2024) v3 §4.3、Appendix D 的计算讨论可用于选择测量项，目标任务中的成本与性能由实测确定。
 
@@ -56,7 +56,7 @@ Residual learning 利用 base controller 执行已有控制规律，再学习接
 
 Tracking 目标和 reset 课程分别影响策略追踪什么、从哪些状态开始学习。[deepmimic-2018](bibliography.md#deepmimic-2018) 报告 motion imitation 与 task objective 的组合，[demostart-2024](bibliography.md#demostart-2024) 报告 sparse reward、少量 simulation demonstrations 与 auto-curriculum。它们为长 reference 的目标权衡和后续 phase 覆盖提供不同参照，具体 RSI/reset 算法仍需结合正文核查。
 
-可以分别设计 reference observation、tracking reward 和 reset sampler。准备 phase-aligned reference、可恢复的 joint/object state 与成功信号后，先评估 imitation 目标和任务完成的关系；若早期失败使后续 phase 很少得到采样，再尝试从 reference 不同阶段初始化。RSI 的具体规则需要核查，手部 reference state 的接触一致性要求见 [03](03-retargeting-to-policy.md#用途二tracking-reference-与-rsi)。
+可以分别设计 reference observation、tracking reward 和 reset sampler。准备 phase-aligned reference、可恢复的 joint/object state 与成功信号后，先评估 imitation 目标和任务完成的关系；若早期失败使后续 phase 很少得到采样，再尝试从 reference 不同阶段初始化。REGRIND 的 contact-consistent reset 规则需另行定义，DeepMimic 的 RSI 原则见 [03](03-retargeting-to-policy.md#用途二tracking-reference-与-rsi)。
 
 实验应固定 actor，分别改变 tracking reward 和 reset distribution，再测试二者的组合。单独消融用于识别各接口的作用，组合结果按完整方案报告。指标包括固定部署初始状态上的 end-to-end success、各 phase 的条件成功率、reset 可行率和 reference error；[demostart-2024](bibliography.md#demostart-2024) 的课程结果为实验设计提供参照。
 
@@ -104,6 +104,6 @@ Domain randomization 用训练分布变化应对部署差异，视觉与动力�
 
 ## 评估顺序与停止条件
 
-增强实验可以从正确记录 baseline 的观测、动作和 update 开始，再按主要瓶颈选择一个接口。成功示范充足时比较 imitation 初始化，几何 reference 可用而动力学偏差明显时比较 residual，后续阶段覆盖不足时比较 reset curriculum，并行扩展饱和时比较 aggregation。共同数据与更新口径固定后，再将 [dppo-2024](bibliography.md#dppo-2024) 或 [04](04-onpolicy-diffusion-interface.md#概率对象) 中满足条件的模型加入 actor 对照。
+增强实验可以从正确记录 baseline 的观测、动作和 update 开始，再按主要瓶颈选择一个接口。成功示范充足时比较 imitation 初始化，几何 reference 可用而动力学偏差明显时比较 residual，后续阶段覆盖不足时比较 reset curriculum，并行扩展饱和时比较 aggregation。共同数据与更新口径固定后，再将 [dppo-2024](bibliography.md#dppo-2024) 或 [概率基础附录](appendix-probability.md#概率对象) 中满足条件的模型加入 actor 对照。
 
 每次实验都应预先定义停止条件和复核节点。原始 action/log-prob、reference reset、部署观测或目标控制周期检查失败时，先修复对应接口；预算耗尽而任务指标持平或变差时，保留负结果和预算记录。训练 reward 与固定测试 task success 的变化出现分歧时，再检查奖励是否对应任务目标。这个评估顺序结合 [implementation-matters-2020](bibliography.md#implementation-matters-2020) 的归因问题，将结果落实到具体接口与任务指标。

@@ -1,12 +1,12 @@
 # REGRIND 与生成式策略的对接思路
 
-本章讨论生成式策略可以怎样用于 retargeting 训练，以及每种尝试需要比较什么。总体选型见 [导读](../README.md)，论文版本与实验范围见 [注释书目](bibliography.md)。
+本文只讨论 REGRIND 的具体适配：把 reference、controller 和 rollout 记录接入生成式 actor，并按什么顺序验证。通用的 retargeting 用途与数据检查以 [03](03-retargeting-to-policy.md) 为准，这里直接列出项目适配步骤。
 
 ## 背景
 
-REGRIND 的项目背景是 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练：先把人类运动转换成机器人参考轨迹，再通过交互学习修正执行中的偏差。这一描述沿用 [03 的项目背景](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)，当前源码与部署状态需另行核查。
+REGRIND 的现有管线是 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练：先把人类运动转换成机器人参考轨迹，再通过交互学习修正执行偏差。当前源码与部署状态需另行核查。
 
-参考轨迹贴合人类动作后，还需通过接触稳定性实验验证机器人执行能力。生成式策略可以用于学习控制修正量、生成连续多步动作，也可以作为训练扰动的候选模型；以下分别说明已有论文验证了什么，以及 REGRIND 仍需进行什么试验。本章只讨论方法接口，不含硬件选型、排期与分工，那些在 REGRIND 侧文档。
+生成式策略可以用于学习控制修正量、生成连续多步动作，也可以作为训练扰动的候选模型；以下分别说明已有论文验证了什么，以及 REGRIND 仍需进行什么试验。本章只讨论方法接口，不含硬件选型、排期与分工，那些在 REGRIND 侧文档。
 
 ## 可插入生成式 actor 的三个接口
 
@@ -30,6 +30,6 @@ Action chunk 是一次预测的一段连续动作，执行其中若干步后再�
 
 ## 接口的概率与记录约定
 
-执行命令与 policy 采样变量需要分别保存。PPO ratio 使用原始采样变量，Residual 相加、幅度缩放与 clipping 后的 command 单独保存用于执行核对；固定 controller 时的条件见 [04 固定执行 mapping](04-onpolicy-diffusion-interface.md#固定执行-mapping)，DPPO 与可逆模型各自需要的记录见 [04 Rollout 记录](04-onpolicy-diffusion-interface.md#rollout-记录)。
+执行命令与 policy 采样变量需要分别保存。PPO ratio 使用原始采样变量，Residual 相加、幅度缩放与 clipping 后的 command 单独保存用于执行核对；固定 controller 时的条件见 [04 固定执行 mapping](04-onpolicy-diffusion-interface.md#固定执行-mapping)，DPPO 与可逆模型各自需要的记录见 [概率基础附录的 Rollout 记录](appendix-probability.md#rollout-记录)。
 
 Reference 的数据检查应先于 actor 比较。坐标系、joint order、时间戳、物体状态和实际执行动作的记录见 [03 数据记录与执行检查](03-retargeting-to-policy.md#数据记录与执行检查)，接触与 controller 可执行性检查见 [03 接触可行性与动力学鸿沟](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。

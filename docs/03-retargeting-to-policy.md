@@ -26,11 +26,11 @@ BC 使用时间对齐的 observation-action pairs 学习策略，action 是监�
 
 ## 用途二：Tracking reference 与 RSI
 
-Tracking 把 motion 作为随时间变化的目标，让 policy 根据反馈调整动作。[deepmimic-2018](bibliography.md#deepmimic-2018) 报告 motion-imitation objective 与 task objective 的组合。对灵巧手，可以尝试将 reference phase、未来目标窗口和 object-relative contact 目标加入训练，并分别测量这些设计的作用。
+DeepMimic 把 reference motion 变成一套完整的训练接口。它将 motion-imitation objective 与 task objective 联合，让 policy 在学习动作风格的同时完成具体任务；policy 输入中的 reference phase 则告诉模型当前处于运动的哪个阶段。对灵巧手，可以沿用这两个设计，并尝试加入未来目标窗口和 object-relative contact 目标，分别测量它们对 tracking 与任务完成的影响。
 
-Reference State Initialization（RSI）提供了从 reference 不同阶段开始 episode 的思路。[deepmimic-2018](bibliography.md#deepmimic-2018) 可作为进一步阅读入口，具体公式和采样分布需结合正文核查。手部应用首先需要 contact-consistent reset：在同一阶段重建关节位置与速度、物体状态和接触模式，再检查该状态能否继续执行。
+Reference State Initialization（RSI）进一步改变 episode 的起点：初始状态从 reference 的不同阶段采样，使后续 phase 在训练早期就能被访问。[deepmimic-2018](bibliography.md#deepmimic-2018) §6.1 描述了这一采样方式，§10.4 的 ablation 还显示 RSI 与 early termination 对高动态技能的重要性。手部应用需要把这一思想落实为 contact-consistent reset：在同一 phase 上重建关节位置与速度、物体状态和接触模式，再检查该状态能否继续执行。
 
-Tracking 实验应同时测量轨迹贴合与任务完成。可以固定其余训练条件，报告 task success、reference error、object motion 和接触结果，观察 joint-space loss 的变化是否对应稳定的物体运动。这种评估结合了 [deepmimic-2018](bibliography.md#deepmimic-2018) 的 imitation/task 目标区分和 [residual-rl-2018](bibliography.md#residual-rl-2018) 对接触误差的关注。
+Tracking 实验应同时测量轨迹贴合与任务完成。可以固定其余训练条件，报告 task success、reference error、object motion 和接触结果，观察 joint-space loss 的变化是否对应稳定的物体运动。这样既保留 [deepmimic-2018](bibliography.md#deepmimic-2018) 的 imitation/task 目标区分，也把 [residual-rl-2018](bibliography.md#residual-rl-2018) 强调的接触误差纳入评估。
 
 ## 用途三：Reward 与 reset 信号
 
@@ -44,7 +44,7 @@ Reset 的关键是重建一个物理一致、可以继续演化的状态，使�
 
 Residual policy 在 base controller 输出上学习修正量，以补偿模型与实际接触之间的偏差。[residual-rl-2018](bibliography.md#residual-rl-2018) 在真机 block assembly 中验证传统控制与 RL signal superposition。迁移到灵巧手时，可以结合控制权限（residual authority）、residual 幅度、饱和率、base-only 稳定性与 reference 的可行区域，评估补偿范围并定位控制和接触问题。
 
-REGRIND 可以在 reference 导出、动作合成和 rollout 记录三个位置开展适配实验。以 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练为项目背景，先检查 reference 的运动学和接触一致性，再在 controller 前固定 residual mapping，并保存 policy 原始随机动作。具体实现需经源码审查与实验确认，生成式 actor 的概率和记录要求见 [04](04-onpolicy-diffusion-interface.md#固定执行-mapping)。
+本章讨论通用的 retargeting 用途与数据检查；REGRIND 的具体插入位置与实验顺序另见 [对接思路](regrind-integration.md)。
 
 ## 遥操作与数据管线
 

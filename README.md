@@ -11,7 +11,7 @@ Diffusion 在机器人学习中的用途，可以按“从哪里学习动作、�
 - **从示范学习动作**：给定相机观测，让模型学习示范中可能出现的动作序列，以条件动作分布替代逐情况手写控制规则（条件动作生成；[Diffusion Policy](docs/bibliography.md#diffusion-policy-2023)）。
 - **从已有数据学习高回报动作**：既学习数据里的动作，又利用价值估计偏向更有希望获得回报的动作，在静态数据集上完成训练（offline RL；[Diffusion-QL](docs/bibliography.md#diffusion-ql-2022)、[IDQL](docs/bibliography.md#idql-2023)）。
 - **通过交互改进预训练策略**：把生成动作的去噪过程拆成可更新的步骤，用新交互得到的奖励继续训练，在扩展 state 上逐步计算 denoising likelihood（denoising-step PPO；[DPPO](docs/bibliography.md#dppo-2024)）。
-- **用可逆生成过程计算概率**：在生成过程满足可逆、密度可计算等条件时，反推出某个采样变量是怎样生成的，从而计算 PPO 更新所需的概率比；该采样变量与机器人执行命令分别定义并记录（exact-inversion；[04 概率对象](docs/04-onpolicy-diffusion-interface.md#概率对象)）。
+- **用可逆生成过程计算概率**：在生成过程满足可逆、密度可计算等条件时，反推出某个采样变量是怎样生成的，从而计算 PPO 更新所需的概率比；该采样变量与机器人执行命令分别定义并记录（exact-inversion；[概率基础附录](docs/appendix-probability.md#概率对象)）。
 
 这些用途可以组合，按现有数据和计算条件选择。方法之间的区别与历史展开见 [diffusion 历史](docs/06-diffusion-history.md)。
 
@@ -51,7 +51,7 @@ DPPO 的 PPO ratio 作用于每个 Gaussian 去噪转移，用同一转移的新
 
 动作表示的问题是怎样在同一条件下保留这些不同选择。Gaussian actor 用高斯分布描述动作，diffusion 则通过逐步去噪生成动作序列；在灵巧手实验中，需要比较的是这些表示对闭环成功率和接触恢复的影响。
 
-[Diffusion Policy](docs/bibliography.md#diffusion-policy-2023) 从示范学习多模态动作分布，将视觉观测作为条件，并结合 receding horizon control：每次预测一段动作，执行其中若干步，再根据新观测重新预测。这为生成式 actor 提供了示范学习中的实现参照；接入 on-policy RL 时，还需定义新旧策略比较的采样变量，具体见 [04 概率对象](docs/04-onpolicy-diffusion-interface.md#概率对象)。
+[Diffusion Policy](docs/bibliography.md#diffusion-policy-2023) 从示范学习多模态动作分布，将视觉观测作为条件，并结合 receding horizon control：每次预测一段动作，执行其中若干步，再根据新观测重新预测。这为生成式 actor 提供了示范学习中的实现参照；接入 on-policy RL 时，还需定义新旧策略比较的采样变量，具体见 [概率基础附录](docs/appendix-probability.md#概率对象)。
 
 策略表示的比较还需要控制训练实现的差异。[Implementation Matters](docs/bibliography.md#implementation-matters-2020) 研究 PPO/TRPO 的实现优化对回报的影响。对应到灵巧手实验，可先建立可复现的 Gaussian PPO baseline，再保持奖励、观测、动作含义和测试初始状态一致，比较生成式 actor 的成功率、掉落率、交互量、训练时间与推理延迟；若更新方法也改变，应把它作为组合方案评估。
 
@@ -63,7 +63,7 @@ DPPO 的 PPO ratio 作用于每个 Gaussian 去噪转移，用同一转移的新
 
 PPO 更新需要比较新旧策略生成同一个样本的概率。Diffusion 的最终动作由多步去噪组合而成，逐步 Gaussian 转移因而成为可直接求值的概率对象。已有成功 demonstrations 和可交互环境后，即可按这一对象组织 PPO 更新。
 
-[DPPO](docs/bibliography.md#dppo-2024) v3 §4–5 把每一步去噪看作一次决策，对该步生成的动作计算 Gaussian likelihood，再用环境奖励更新策略。这把概率求值转到去噪过程中的每一步，训练记录也需要保存这些步骤的状态与动作，详见 [04 Rollout 记录](docs/04-onpolicy-diffusion-interface.md#rollout-记录)。
+[DPPO](docs/bibliography.md#dppo-2024) v3 §4–5 把每一步去噪看作一次决策，对该步生成的动作计算 Gaussian likelihood，再用环境奖励更新策略。这把概率求值转到去噪过程中的每一步，训练记录也需要保存这些步骤的状态与动作，详见 [概率基础附录的 Rollout 记录](docs/appendix-probability.md#rollout-记录)。
 
 [MoDex](docs/bibliography.md#modex-2026) 将这一方法用于顺序多物体抓取：先通过 behavior cloning 预训练 diffusion policy，再在仿真中进行 DPPO fine-tuning，最后报告 Allegro 真机上的 zero-shot 部署。它提供了从示范学习、仿真交互改进到真机执行的具体案例。
 
@@ -108,7 +108,8 @@ Diffusion 也可把生成目标限定为抓取候选。[DexDiffuser](docs/biblio
 - [01 问题结构](docs/01-problem-structure.md)：确定灵巧手任务、观测与硬件条件，或比较不同论文实验设置时读。
 - [02 方法选择](docs/02-method-landscape.md)：资源已明确，需要在 imitation、RL 与组合方案之间做选择时读。
 - [03 Retargeting 到 policy](docs/03-retargeting-to-policy.md)：已有运动轨迹，需要判断怎样用于训练、怎样检查接触可行性时读。
-- [04 On-policy diffusion 接口](docs/04-onpolicy-diffusion-interface.md)：准备实现路线 1、2，或核对 residual 的概率与执行记录时读。
+- [04 On-policy diffusion 执行与任务接口](docs/04-onpolicy-diffusion-interface.md)：准备实现路线 1、2，或核对 residual 的执行 mapping 与任务配置时读。
+- [概率基础附录](docs/appendix-probability.md)：需要实现 likelihood、entropy/KL 或 exact-inversion 时读。
 - [05 PPO 增强](docs/05-ppo-enhancement.md)：已有训练结果，需要定位失败原因或设计隔离实验时读。
 - [06 Diffusion 历史](docs/06-diffusion-history.md)：需要进一步区分 imitation、offline RL 与 on-policy 方法时读。
 - [REGRIND 对接思路](docs/regrind-integration.md)：需要把生成式策略用于 REGRIND 的 reference、residual 或部署扰动试验时读。

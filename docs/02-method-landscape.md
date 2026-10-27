@@ -72,14 +72,16 @@ Offline 方法从静态数据学习，on-policy fine-tuning 需要可交互环�
 
 ## 首个实验与停止条件
 
-五个方法族采用同一套对照实验设置：先指定唯一受测变量，再固定其余实验条件。每个对照只改变一个接口，分别报告固定 interactions 与固定 wall-clock 下的 per-seed 结果，并记录失败类型和预算消耗；若多个接口同时改变，结果按组合方案归因。首个实验还应写明失败信号、候选解释、共同环境配置、部署 latency 限制和事先定义的成功判据，任务用途与记录要求见 [04](04-onpolicy-diffusion-interface.md#按检查目的选择任务) 和 [05](05-ppo-enhancement.md#评估顺序与停止条件)。
+五个方法族采用同一套对照原则：每次对照只改动一个接口、检验一个变量，其余条件保持一致。若必须同时改动多个接口，就把整个方案作为组合实验，结果只归因于这一组合，不能据此判断其中某个接口的独立作用。实验结果分别按固定环境交互次数和固定实际运行时长两种预算口径报告，每种口径都列出各个随机种子的结果，并记录失败类型和实际消耗。
+
+首个实验开始前，还要写明观察到的失败现象、准备检验的解释、各组共用的环境配置、部署时延上限和预先确定的成功标准。任务用途与记录要求见 [04](04-onpolicy-diffusion-interface.md#按检查目的选择任务) 和 [05](05-ppo-enhancement.md#评估顺序与停止条件)。
 
 各方法族的特定比较项如下：
 
 - 仿真 RL：固定任务和 baseline，只改变一个 randomization family 或并行规模，记录扰动条件下的 task success，并区分分布覆盖与计算吞吐的贡献。
 - 遥操作：固定任务与 imitation 模型，比较数据筛选或采集方案，记录成功接触片段覆盖、同步误差与闭环 task success；可执行性检查见 [03](03-retargeting-to-policy.md#遥操作与数据管线)。
 - 人类视频：固定 robot 数据与下游模型，比较启用与关闭视频引导的两组设置，分别记录 reference 可行率与闭环成功率。
-- Diffusion policy：在相同数据、observation、action horizon 和测试 reset 下比较 Gaussian imitation 与 diffusion imitation，先建立闭环，再根据任务需求决定是否加入 reward fine-tuning；auxiliary density 与 online 更新见 [04](04-onpolicy-diffusion-interface.md)。
-- Diffusion 与 RL：固定任务、数据与 Gaussian baseline，再更换 actor 及其必需的记录、更新接口；开始前确认 old log-prob 能在原采样变量上重算、数据版本匹配、观测/reference/reset 已完成检查，详见 [04](04-onpolicy-diffusion-interface.md)。
+- Diffusion policy：在相同数据、observation、action horizon 和测试 reset 下比较 Gaussian imitation 与 diffusion imitation，先建立闭环，再根据任务需求决定是否加入 reward fine-tuning；auxiliary density 与 online 更新见 [概率基础附录](appendix-probability.md)。
+- Diffusion 与 RL：固定任务、数据与 Gaussian baseline，再更换 actor 及其必需的记录、更新接口；开始前确认 old log-prob 能在原采样变量上重算、数据版本匹配、观测/reference/reset 已完成检查，详见 [概率基础附录](appendix-probability.md)。
 
 停止条件分为接口检查与实验结果两类。动作 log-prob 重算、reset 可行性、部署输入和 latency 预算中的任一检查失败时，暂停追加训练并修复对应接口。预算耗尽而预定义 task metric 持平或变差时，保留负结果，后续改动作为新假设评估；训练 reward 上升而固定测试 success 持平或下降时，重新检查奖励与任务目标的对应关系。
