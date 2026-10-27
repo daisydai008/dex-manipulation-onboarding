@@ -1,18 +1,18 @@
 # 02 从资源和失败信号选择方法
 
-> 本章帮助已有 RL 背景的读者根据现有资源和训练中的失败现象选择方法，确定数据采集、imitation、RL 或组合实验的优先级，并写出首个对照方案。
+> 本章帮助已有 RL 背景的读者把现有资源映射到候选方法，并把失败现象转化为可检验的实验。
 
-选型先回答两个问题：当前已经具备哪些资源，训练又在哪个环节失效。资源决定哪些方案可以执行，失败现象决定哪个接口值得优先验证。沿着这两条线索，可以把候选方法收敛到一个可检验的首个实验。
+选型从两个事实开始：现有数据、环境和控制器决定了哪些方案可执行，训练中的失败现象决定了先检查哪个接口。把这两条线索分开记录，首个实验才有明确的归因对象。
 
 ## 任务契约
 
-可复现的任务契约是结果可比的前提。按 [01](01-problem-structure.md#任务谱系) 说明研究对象属于 in-hand、grasp acquisition、arm-hand、双手还是 long-horizon，并为 success、掉落、超时和恢复行为写出判据。初始接触、测试物体与部署初始分布也要一并记录，它们共同规定回报数字与成功率的含义。
+先把 benchmark 名称展开为可复现的任务契约。按 [01](01-problem-structure.md#任务谱系) 写明研究对象属于 in-hand、grasp acquisition、arm-hand、双手还是 long-horizon，并定义 success、掉落、超时和恢复行为。初始接触、测试物体与部署初始分布也要一并记录，它们共同规定回报数字与成功率的含义。
 
-观测与动作契约需要贯穿训练和部署。观测侧分别列出 actor、critic 使用的 privileged state、视觉、proprioception、tactile、history/recurrence，以及采样时间和 delay；动作侧写明 target/delta/velocity/torque、control rate、action chunk 与执行 mapping，待核查项单独列出。训练使用了部署侧难以直接取得的输入时，先确定部署感知来源并验证接口，再评估 actor 容量的影响；相关实例与核查项见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
+观测与动作契约接着固定训练和部署的输入输出。观测侧分别列出 actor、critic 使用的 privileged state、视觉、proprioception、tactile、history/recurrence，以及采样时间和 delay；动作侧写明 target/delta/velocity/torque、control rate、action chunk 与执行 mapping，待核查项单独列出。训练使用了部署侧难以直接取得的输入时，先确定部署感知来源并验证接口，再评估 actor 容量的影响；相关实例与核查项见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
 
 ## 资源盘点
 
-资源盘点把候选方法落实为具体的准备清单。先确认 simulator、reward 和 reset 可以复现，再检查成功 robot demonstrations 是否包含同步观测和动作，reference 能否重建 joint/object state，以及 base controller 能否独立闭环。Retargeting 数据的有效性通过执行结果确认，几何误差与接触成功分别记录，检查方法见 [03](03-retargeting-to-policy.md#链条与数据契约)。
+资源盘点把候选方法落实为准备清单。先确认 simulator、reward 和 reset 可以复现，再检查成功 robot demonstrations 是否包含同步观测和动作，reference 能否重建 joint/object state，以及 base controller 能否独立闭环。Retargeting 数据的有效性通过执行结果确认，几何误差与接触成功分别记录，检查方法见 [03](03-retargeting-to-policy.md#链条与数据契约)。
 
 训练预算与部署约束需要分开测量。训练侧记录可用 environment interactions、wall-clock 和显存，部署侧记录推理 latency 与允许的控制周期。人类视频提供运动线索，robot action labels 还需经过形态映射和执行记录对齐；真机采样能力则由实际采集周期和延迟决定。完成这份清单后，再选择采集、imitation、RL 或组合路线。
 
@@ -28,7 +28,7 @@
 
 ## 候选选择：五个方法族
 
-五个方法族分别回应交互学习、数据获取、跨形态引导、动作表示和奖励优化。选择时先看现有资源与失败现象，再核对使用成本，最后用最小实验验证收益。它们可以按任务需要组合。
+五类方法分别处理交互学习、数据获取、跨形态引导、动作表示和奖励优化。选择时先看现有资源与失败现象，再核对使用成本，最后用最小实验验证收益。它们可以按任务需要组合。
 
 ### 仿真 RL 与 sim-to-real 工程
 
@@ -36,15 +36,11 @@
 
 这条路线要求 simulator、reward/reset 可复现，已有 Gaussian PPO baseline，并能明确训练与部署的观测差异。接触仿真、奖励设计、randomization 校准、环境交互和部署验证构成主要投入。准备阶段先检查 reset 的物理可行性、部署观测来源与成功指标，再评估训练规模和样本效率。
 
-最小实验从固定任务的 Gaussian PPO 开始，随后只改变一个 randomization family 或并行规模。固定 interactions 与固定 wall-clock 的结果分别报告，同时记录扰动条件下的 task success，用来区分分布覆盖与计算吞吐的贡献。
-
 ### 遥操作与数据采集
 
 遥操作首先解决成功 robot demonstrations 的来源问题，也能补充现有运动记录中的同步观测和可执行动作。[dexpilot-2020](bibliography.md#dexpilot-2020)、[anyteleop-2023](bibliography.md#anyteleop-2023) 与 [dexcap-2024](bibliography.md#dexcap-2024) 分别介绍了各自的运动映射与数据管线，比较时应结合任务和设备配置阅读。
 
 采集方案需要同时覆盖机器人动作接口、传感同步、操作者控制和安全流程，并分别保存 reference target 与 executed action。设备、标定、操作者时间、失败标注和 embodiment 对齐构成主要成本。现有数据若已覆盖成功行为且动作定义一致，可以先检查 reward、update 或 reset，再决定追加采集的内容。
-
-最小实验可以固定任务与 imitation 模型，比较数据筛选或采集方案。结果同时记录成功接触片段的覆盖、同步误差和闭环 task success，用于判断新增数据对策略的实际帮助；可执行性检查见 [03](03-retargeting-to-policy.md#遥操作与数据管线)。
 
 ### 人类视频与模仿
 
@@ -52,23 +48,17 @@
 
 实施这类方法时，需要处理姿态与物体估计、时间对齐、遮挡和接触可行性；使用 robot demonstrations 时另行记录其数量。精确接触任务还要确认物体与接触状态可以恢复，并通过机器人执行验证动作监督或 reference 的质量。这些条件决定了视频信息能转化为哪一类训练信号。
 
-最小实验可以固定 robot 数据与下游模型，比较启用与关闭视频引导的两组设置。分别记录 reference 可行率与闭环成功率，使几何映射和控制完成各有独立指标。
-
 ### Diffusion policy
 
 Diffusion policy 用条件生成模型学习示范中的动作分布，适合研究多模态动作与 action horizon。[diffusion-policy-2023](bibliography.md#diffusion-policy-2023) 报告 visuomotor imitation，[dp3-2024](bibliography.md#dp3-2024) 研究 3D representation；两类工作分别提供动作生成与观测表示的参照。
 
 训练需要成功的 robot observation-action 数据、明确的 prediction/execution horizon，以及部署可用输入。主要成本来自 denoising 推理、数据覆盖、chunk 与 controller 对齐和观测一致性检查。实施时先验证动作监督与 reference 的可执行性，再测候选 sampler 的 latency 是否适合控制周期；闭环成功和恢复表现由目标任务实验判断。
 
-最小实验是在相同数据、observation、action horizon 与测试 reset 下，比较 Gaussian imitation 和 diffusion imitation。先建立 imitation 闭环，再根据任务需求决定是否加入 reward fine-tuning；auxiliary density 与 online 更新在下一节单独讨论。
-
 ### Diffusion 与 RL
 
 Diffusion 与 RL 的结合覆盖两条路径：利用静态数据改进策略，以及利用任务奖励继续训练 imitation 策略。[diffusion-ql-2022](bibliography.md#diffusion-ql-2022) 与 [idql-2023](bibliography.md#idql-2023) 提供 offline 路线，[dppo-2024](bibliography.md#dppo-2024) v3 §4–5 介绍 denoising-step PPO 与 fine-tuning。研究 Gaussian actor 在一致条件下的表示限制时，还需针对所选 sampler 核查可逆性与 exact density。
 
 Offline 方法从静态数据学习，on-policy fine-tuning 需要可交互环境，因此数据与交互资源应分别盘点。两者都需要清晰的 baseline，on-policy 方法还需确定 probability object 和 rollout schema。额外成本包括 sampling、likelihood 求值、denoising trajectory 或 auxiliary action 存储、update compute，以及数据来源和版本管理。
-
-最小实验可以固定任务、数据和 Gaussian baseline，再更换 actor 及其必需的记录、更新接口。开始比较前，确认 old log-prob 能在原采样变量上重算，数据版本匹配，观测、reference 与 reset 已完成检查。若 actor、update schema 和 pretraining 一起改变，结果按组合方案归因，详见 [04](04-onpolicy-diffusion-interface.md)。
 
 ## 三条起步路线
 
@@ -82,6 +72,14 @@ Offline 方法从静态数据学习，on-policy fine-tuning 需要可交互环�
 
 ## 首个实验与停止条件
 
-首个实验应围绕一个可证伪的问题组织。写明失败信号、候选解释、唯一改动接口、共同数据与环境配置、seed 列表、interactions 与 wall-clock 上限、部署 latency 限制，以及事先定义的成功判据。报告 baseline 与对照的 per-seed 结果、失败类型和预算消耗，按完整结果判断方法；任务用途与记录要求见 [04](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证) 和 [05](05-ppo-enhancement.md#评估顺序与停止条件)。
+五个方法族共用一套对照原则：先指定唯一受测变量，再固定其余实验条件。每个对照只改变一个接口，分别报告固定 interactions 与固定 wall-clock 下的 per-seed 结果，并记录失败类型和预算消耗；若多个接口同时改变，结果按组合方案归因。首个实验还应写明失败信号、候选解释、共同环境配置、部署 latency 限制和事先定义的成功判据，任务用途与记录要求见 [04](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证) 和 [05](05-ppo-enhancement.md#评估顺序与停止条件)。
+
+各方法族的特定比较项如下：
+
+- 仿真 RL：固定任务和 baseline，只改变一个 randomization family 或并行规模，记录扰动条件下的 task success，并区分分布覆盖与计算吞吐的贡献。
+- 遥操作：固定任务与 imitation 模型，比较数据筛选或采集方案，记录成功接触片段覆盖、同步误差与闭环 task success；可执行性检查见 [03](03-retargeting-to-policy.md#遥操作与数据管线)。
+- 人类视频：固定 robot 数据与下游模型，比较启用与关闭视频引导的两组设置，分别记录 reference 可行率与闭环成功率。
+- Diffusion policy：在相同数据、observation、action horizon 和测试 reset 下比较 Gaussian imitation 与 diffusion imitation，先建立闭环，再根据任务需求决定是否加入 reward fine-tuning；auxiliary density 与 online 更新见 [04](04-onpolicy-diffusion-interface.md)。
+- Diffusion 与 RL：固定任务、数据与 Gaussian baseline，再更换 actor 及其必需的记录、更新接口；开始前确认 old log-prob 能在原采样变量上重算、数据版本匹配、观测/reference/reset 已完成检查，详见 [04](04-onpolicy-diffusion-interface.md)。
 
 停止条件分为接口检查与实验结果两类。动作 log-prob 重算、reset 可行性、部署输入和 latency 预算中的任一检查失败时，暂停追加训练并修复对应接口。预算耗尽而预定义 task metric 持平或变差时，保留负结果，后续改动作为新假设评估；训练 reward 上升而固定测试 success 持平或下降时，重新检查奖励与任务目标的对应关系。
