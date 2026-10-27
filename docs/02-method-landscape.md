@@ -1,93 +1,83 @@
 # 02 从资源和失败信号选择方法
 
-> 本章回答：给定手上现有资源和最可能的失败点，该选哪个方法族。读完能把给定处境映射到五个方法族之一，并知道首个实验要排除什么解释。对应路线：为四条起步路线提供选型依据与失败信号排查。
+> 本章讨论怎样根据现有资源和训练中的失败现象选择方法。阅读后可以确定先做数据采集、imitation、RL 还是组合实验，并写出首个对照方案。对应 README 的四条研究路线。
 
-方法选择应先说明现有资源、失败发生在哪里，以及首个实验能排除什么解释。本章与 [README](../README.md) 负责选方向；[01](01-problem-structure.md) 界定任务范围，[03](03-retargeting-to-policy.md) 检查可执行性，[04](04-onpolicy-diffusion-interface.md) 约束概率接口，[05](05-ppo-enhancement.md) 负责诊断和隔离实验。以下选型均为【机制相关】【需新证据】的建议，不构成方法排名或灵巧手收益承诺。
+方法选择从任务、资源和具体问题开始。本章与 [README](../README.md) 提供选型思路；[01](01-problem-structure.md) 介绍任务设置，[03](03-retargeting-to-policy.md) 讨论运动数据的用途与可执行性，[04](04-onpolicy-diffusion-interface.md) 定义概率与执行接口，[05](05-ppo-enhancement.md) 展开训练诊断。下文先整理已有论文的做法，再提出目标灵巧手任务中的实验建议。
 
 ## 任务契约
 
-【机制相关】首个实验应固定任务契约，把 benchmark 名称展开为可复现的任务定义。按 [01](01-problem-structure.md#任务谱系) 写明 in-hand、grasp acquisition、arm-hand、双手或 long-horizon 的目标，定义 success、掉落、超时和恢复行为，记录初始接触状态、测试物体与部署初始分布；未明确这些条件时，不比较论文回报数字。
+首个实验需要一份可复现的任务定义。按 [01](01-problem-structure.md#任务谱系) 说明研究对象属于 in-hand、grasp acquisition、arm-hand、双手还是 long-horizon，写明 success、掉落、超时和恢复行为的判据，同时记录初始接触、测试物体与部署初始分布。这些条件共同决定回报数字与成功率的含义，也是跨论文比较的依据。
 
-【机制相关】【需新证据】观测与动作契约应横贯所有方法族。分别记录 actor/critic 的 privileged state、视觉、proprioception、tactile、history/recurrence、采样时间与 delay，未知项列入后续核查；动作要明确 target/delta/velocity/torque、control rate、action chunk 与执行 mapping。若部署阶段缺少训练时使用的输入，应先修复感知或接口；随后再用对照实验判断 actor 容量是否影响任务表现，避免把感知缺口误当成容量问题。证据范围见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
+观测与动作的定义需要贯穿训练和部署。分别列出 actor、critic 使用的 privileged state、视觉、proprioception、tactile、history/recurrence，以及采样时间和 delay；动作则写明 target/delta/velocity/torque、control rate、action chunk 和执行 mapping。待核查项单独列出；涉及训练专有输入时，先确定部署侧的感知来源并验证接口，再评估 actor 容量的影响；相关实例与核查项见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
 
 ## 资源盘点
 
-【机制相关】资源盘点的产出是可用清单与缺口清单。检查 simulator/reward/reset 是否可复现，成功 robot demonstrations 是否含同步观测和真实动作，reference 是否有可重建的 joint/object state，base controller 是否可独立闭环；数据是否成功不能由 retargeting 几何误差判断，依据与检查项见 [03](03-retargeting-to-policy.md#链条与数据契约)。
+资源盘点应明确哪些条件已经可用，哪些条件还需要准备。确认 simulator、reward 和 reset 可以复现；检查成功 robot demonstrations 是否包含同步观测和动作；判断 reference 能否重建 joint/object state，以及 base controller 能否独立闭环。Retargeting 数据的有效性应通过执行结果确认，几何误差与接触成功分别记录，检查方法见 [03](03-retargeting-to-policy.md#链条与数据契约)。
 
-【需新证据】训练资源与部署约束应分别记录。列出可用 environment interactions、wall-clock、显存、推理 latency 和允许的控制周期；人类视频提供运动线索，robot action labels 需通过 retargeting 与执行记录获得，真机采样能力则按实际采集周期与延迟单独测量。先保留这些限制，再选择采集、imitation、RL 或组合路线，不从方法名称补全缺失资源。
+训练预算与部署约束需要分别测量。训练侧记录可用 environment interactions、wall-clock 和显存，部署侧记录推理 latency 与允许的控制周期。人类视频可以提供运动线索，robot action labels 还需要经过形态映射和执行记录对齐；真机采样能力则取决于实际采集周期和延迟。把这些资源列清楚后，再选择采集、imitation、RL 或组合路线。
 
 ## 瓶颈诊断：由可观察信号驱动
 
-【机制相关】【需新证据】update 异常先排查概率与估计接口。若 KL/clip fraction 在更新后突变，检查同一 action 的 old/new log-prob、advantage、normalization 与 done/truncation；这些确认一致后才分别改变 LR、epoch 或 clip，不能先归因于探索不够。[implementation-matters-2020](bibliography.md#implementation-matters-2020) 支持实现归因的重要性，具体排查顺序是 [05 selector](05-ppo-enhancement.md#从失败信号选择接口) 的候选设计。
+更新后 KL 或 clip fraction 突变时，先检查概率与估计记录。核对同一 action 的 old/new log-prob、advantage、normalization 和 done/truncation 处理，再分别调整 LR、epoch 或 clip。[implementation-matters-2020](bibliography.md#implementation-matters-2020) 说明了实现差异对结果归因的重要性；这里的检查顺序是据此提出的诊断方案，具体项目见 [05 selector](05-ppo-enhancement.md#从失败信号选择接口)。
 
-【机制相关】【需新证据】几何贴合但物体滑落，优先定位接触与控制问题。按 phase 记录 reference error、object motion、接触失败、base-only 成功与 residual 饱和，先检查 reference/base/feasible reset，再决定是否替换 actor；若早期失败导致后续 phase 几乎无采样，再单独评估 phase resets/curriculum，并始终用固定部署初始状态报告 end-to-end success，见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
+轨迹几何贴合而物体仍滑落时，重点检查接触与控制。按 phase 记录 reference error、object motion、接触失败、base-only 成功率和 residual 饱和情况，核对 reference、base controller 与 reset 的可执行性。若早期失败使后续 phase 很少得到采样，可以单独比较 phase resets 或 curriculum，并始终从固定部署初始状态报告 end-to-end success，详见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
 
-【需新证据】只有在数据与更新口径一致之后，才能把动作表示不足列为候选解释。观察相同条件下的成功动作是否存在多种模式、imitation 的闭环恢复是否失败，以及 Gaussian baseline 的问题是否仍存在；多模态数据本身不能证明 diffusion 会提高 task success。若主要耗时在 simulator，先分段测量 simulator 与 actor/update 的耗时，再决定是否更换生成模型；实验拆分见 [05](05-ppo-enhancement.md)。
+动作表示是否合适，需要在数据与更新口径一致后判断。可以检查同一条件下的成功动作是否具有多种模式，以及这些模式与 Gaussian baseline 的失败、imitation 的恢复表现有何关联，再用对照实验评估 diffusion 的作用。计算效率则通过 simulator、actor 和 update 的分段耗时判断，实验拆分见 [05](05-ppo-enhancement.md)。
 
 ## 候选选择：五个方法族
 
-五族是可组合的标签，不是从低级到高级的阶段。每张短卡按同一字段约束选择，论文证据与拟议收益分开；涉及目标灵巧任务的收益均【需新证据】。
+以下五类方法分别处理交互学习、数据获取、跨形态引导、动作表示和奖励优化，可以根据任务需要组合。各节先说明论文做过的工作，再讨论使用条件、成本与建议的最小实验。
 
 ### 仿真 RL 与 sim-to-real 工程
 
-- 解决的瓶颈：【机制相关】已有任务和奖励，但缺少闭环接触策略或部署分布覆盖。
-- 前置条件：可复现 simulator、reward/reset、Gaussian PPO baseline 与明确的训练/部署观测差异。
-- 收益预期：【需新证据】建立从交互学习的控制基线，测试扰动下的 task success，不预设 sample efficiency。
-- 代价：接触仿真、奖励定义、randomization 校准、交互预算与部署验证。
-- 证据范围：[openai-inhand-2020](bibliography.md#openai-inhand-2020)、[dextreme-2022](bibliography.md#dextreme-2022) 的 abstract 支持各自系统的 sim-to-real；[massively-parallel-2021](bibliography.md#massively-parallel-2021) 的并行证据来自 locomotion，不能直接转为手部加速比。
-- 不适用情形：reset 物理不可行、部署观测不可得，或成功指标尚未定义；出现这些情况时，应先修复 reset、部署观测或成功指标，再评估扩大训练规模的收益。
-- 最小对照：【机制相关】【需新证据】先固定任务测 Gaussian PPO；只改变一个 randomization family 或并行规模，分别按 interactions 与 wall-clock 报告结果。
+仿真 RL 适合已有任务和奖励、需要通过交互学习接触控制的场景。[openai-inhand-2020](bibliography.md#openai-inhand-2020) 与 [dextreme-2022](bibliography.md#dextreme-2022) 报告了各自系统从仿真到真机的策略迁移；[massively-parallel-2021](bibliography.md#massively-parallel-2021) 则研究 locomotion 中的并行训练，为吞吐与训练时间的测量提供参照。
+
+采用这条路线需要可复现的 simulator、reward/reset 和 Gaussian PPO baseline，并明确训练与部署的观测差异。主要投入包括接触仿真、奖励设计、randomization 校准、环境交互和部署验证。准备阶段先检查 reset 的物理可行性、部署观测来源与成功指标，再评估训练规模和样本效率。
+
+最小实验可以固定任务测量 Gaussian PPO，然后只改变一个 randomization family 或并行规模。分别报告固定 interactions 与固定 wall-clock 下的结果，并记录扰动条件下的 task success，从而区分分布覆盖与计算吞吐的贡献。
 
 ### 遥操作与数据采集
 
-- 解决的瓶颈：【机制相关】缺少成功 robot demonstrations，或已有运动记录没有同步、可执行 action。
-- 前置条件：机器人动作接口、传感同步、操作者控制与安全流程；能区分 reference target 和 executed action。
-- 收益预期：【需新证据】获得可筛选的成功接触片段和闭环 imitation 数据，不把数据量当作 policy 收益。
-- 代价：采集设备、标定、操作者时间、失败标注与 embodiment 对齐。
-- 证据范围：[dexpilot-2020](bibliography.md#dexpilot-2020)、[anyteleop-2023](bibliography.md#anyteleop-2023)、[dexcap-2024](bibliography.md#dexcap-2024) 的 abstract 覆盖各自映射与数据管线，不提供统一成功率排名。
-- 不适用情形：已有覆盖充分且动作一致的数据，当前失败主要来自 reward、update 或不可行 reset；应先诊断现有数据为何不能闭环。
-- 最小对照：【机制相关】【需新证据】固定任务和 imitation 模型，只比较数据筛选/采集方案，报告成功片段覆盖、同步误差与闭环 task success；可执行性检查见 [03](03-retargeting-to-policy.md#遥操作与数据管线)。
+遥操作用于获取成功的 robot demonstrations，也可补充现有运动记录中的同步观测和可执行动作。[dexpilot-2020](bibliography.md#dexpilot-2020)、[anyteleop-2023](bibliography.md#anyteleop-2023) 与 [dexcap-2024](bibliography.md#dexcap-2024) 分别介绍了各自的运动映射与数据管线，比较时应结合任务和设备配置阅读。
+
+采集前需要确定机器人动作接口、传感同步、操作者控制和安全流程，并分别保存 reference target 与 executed action。设备、标定、操作者时间、失败标注和 embodiment 对齐构成主要成本。若现有数据已覆盖成功行为且动作定义一致，可以先检查 reward、update 或 reset，再决定追加采集的内容。
+
+最小实验可以固定任务与 imitation 模型，比较数据筛选或采集方案。结果同时记录成功接触片段的覆盖、同步误差和闭环 task success，用于判断新增数据对策略的实际帮助；可执行性检查见 [03](03-retargeting-to-policy.md#遥操作与数据管线)。
 
 ### 人类视频与模仿
 
-- 解决的瓶颈：【机制相关】有可利用的人类运动或任务结构，但缺少同 embodiment 的动作监督。
-- 前置条件：可获取的场景/运动线索、跨 embodiment 对齐，以及后续 robot 执行验证；有 robot demonstrations 时应另行记录其使用量。
-- 收益预期：【需新证据】提供 reference 或高层任务引导，expert robot action 则由真实执行记录提供。
-- 代价：姿态/物体估计、时间对齐、遮挡处理及接触可行性校验。
-- 证据范围：[robotic-telekinesis-2022](bibliography.md#robotic-telekinesis-2022) 的 abstract 支持机器人手 imitation，[mimicplay-2023](bibliography.md#mimicplay-2023) 支持 human play 与少量 robot demonstrations 的组合；两者不证明任意 retargeted trajectory 都能用于 BC。
-- 不适用情形：任务需要精确接触动作而记录无法恢复物体/接触状态，或无法验证生成 reference 的动力学可行性。
-- 最小对照：【机制相关】【需新证据】固定 robot 数据与下游模型，比较有/无视频引导；分别记录 reference 可行率与闭环成功率，避免把几何匹配当作控制完成。
+人类视频提供运动、场景和任务结构，机器人学习还需要跨 embodiment 的映射。[robotic-telekinesis-2022](bibliography.md#robotic-telekinesis-2022) 报告机器人手 imitation，[mimicplay-2023](bibliography.md#mimicplay-2023) 将 human play 与少量 robot demonstrations 结合，分别展示运动映射和高层引导的用途。
+
+这类方法适合有可利用的人类运动、需要 reference 或任务引导的场景。实施时要处理姿态与物体估计、时间对齐、遮挡和接触可行性；使用 robot demonstrations 时另行记录其数量。精确接触任务还需确认物体与接触状态可以恢复，并通过机器人执行验证动作监督或 reference 的质量。
+
+最小实验可以固定 robot 数据与下游模型，比较有/无视频引导。分别记录 reference 可行率与闭环成功率，使几何映射和控制完成各有独立指标。
 
 ### Diffusion policy
 
-- 解决的瓶颈：【机制相关】成功 demonstrations 中有条件多模态动作，现有 imitation 表示或 action horizon 可能不足。
-- 前置条件：成功 robot observation-action 数据、明确的 prediction/execution horizon、可部署输入与 latency 预算。
-- 收益预期：【需新证据】比较 conditional generation 是否改善闭环成功与恢复；不由表达能力直接推出 on-policy RL 收益。
-- 代价：denoising 推理、数据覆盖、chunk/controller 对齐，以及训练与部署观测一致性检查。
-- 证据范围：[diffusion-policy-2023](bibliography.md#diffusion-policy-2023) 的 abstract 支持 visuomotor imitation，[dp3-2024](bibliography.md#dp3-2024) 支持 3D representation；它们不是 auxiliary density 或灵巧手 online fine-tuning 的证据。
-- 不适用情形：没有有效动作监督、reference 还不能执行，或控制周期不支持候选 sampler 的实测 latency。
-- 最小对照：【机制相关】【需新证据】相同数据、observation、action horizon 与测试 reset 下比较 Gaussian imitation 与 diffusion imitation，先完成闭环再决定是否加 reward fine-tuning。
+Diffusion policy 用条件生成模型学习示范中的动作分布，适合研究多模态动作与 action horizon。[diffusion-policy-2023](bibliography.md#diffusion-policy-2023) 报告 visuomotor imitation，[dp3-2024](bibliography.md#dp3-2024) 研究 3D representation；这两类工作分别提供动作生成与观测表示的参照。
+
+训练需要成功的 robot observation-action 数据、明确的 prediction/execution horizon，以及部署可用输入。主要成本来自 denoising 推理、数据覆盖、chunk 与 controller 对齐和观测一致性检查。可以先验证动作监督与 reference 的可执行性，再测候选 sampler 的 latency 是否适合控制周期；闭环成功和恢复表现由目标任务实验判断。
+
+最小实验是在相同数据、observation、action horizon 与测试 reset 下，比较 Gaussian imitation 和 diffusion imitation。先建立 imitation 闭环，再根据任务需求决定是否加入 reward fine-tuning；auxiliary density 与 online 更新在下一节单独讨论。
 
 ### Diffusion 与 RL
 
-- 解决的瓶颈：【机制相关】imitation 已能闭环但 task reward 尚有改进需求，或一致条件下 Gaussian actor 的表示限制仍有可观察证据。
-- 前置条件：可交互环境、可归因的 baseline、明确的 probability object 与 rollout schema；offline 与 on-policy 资源不能混用。
-- 收益预期：【需新证据】检验 actor 与相应更新方案是否改善目标任务，不预设接触探索或稳定性优势。
-- 代价：sampling、likelihood、denoising trajectory/auxiliary action 存储、update compute 与数据来源控制。
-- 证据范围：[diffusion-ql-2022](bibliography.md#diffusion-ql-2022) 与 [idql-2023](bibliography.md#idql-2023) 的 abstract 支持 offline 路线；[dppo-2024](bibliography.md#dppo-2024) v3 §4–5 支持 denoising-step PPO 与 fine-tuning，不能替未指定 sampler 证明可逆性或 exact density。
-- 不适用情形：old log-prob 无法在原采样变量上重算、数据版本失配，或观测/reference/reset 问题尚未排除。
-- 最小对照：【机制相关】【需新证据】先固定任务、数据与 Gaussian baseline，再替换 actor 和必要的记录/更新接口；若同时改变 actor、update schema、pretraining，只能归因于组合，不能单独归因于 actor，见 [04](04-onpolicy-diffusion-interface.md)。
+Diffusion 与 RL 的结合可以利用任务奖励继续改进 imitation 策略，也可研究 Gaussian actor 在一致条件下出现的表示限制。[diffusion-ql-2022](bibliography.md#diffusion-ql-2022) 与 [idql-2023](bibliography.md#idql-2023) 提供 offline 路线，[dppo-2024](bibliography.md#dppo-2024) v3 §4–5 介绍 denoising-step PPO 与 fine-tuning。可逆性与 exact density 则需要针对所选 sampler 核查。
+
+Offline 方法从静态数据学习，on-policy fine-tuning 需要可交互环境；选择时应分别盘点数据与交互资源。两者都需要清晰的 baseline，on-policy 方法还需确定 probability object 和 rollout schema。额外成本包括 sampling、likelihood 求值、denoising trajectory 或 auxiliary action 存储、update compute，以及数据来源和版本管理。
+
+最小实验可以固定任务、数据和 Gaussian baseline，再更换 actor 及其必需的记录、更新接口。开始比较前确认 old log-prob 能在原采样变量上重算，数据版本匹配，观测、reference 与 reset 已完成检查。若 actor、update schema 和 pretraining 一起改变，结果按组合方案归因，详见 [04](04-onpolicy-diffusion-interface.md)。
 
 ## 三条起步路线
 
-【机制相关】【需新证据】有 simulator、无示范时，先建立 Gaussian PPO baseline。固定 reward/reset/observation/action semantics，输出学习曲线、成功/掉落、KL/clip fraction 与分段耗时；只有 baseline 接口一致且仍有具体失败假设时才选择五族中的下一项，不把 diffusion 作为默认起点，依据 [ppo-2017](bibliography.md#ppo-2017) 与 [05](05-ppo-enhancement.md#固定-ppo-更新与估计口径)。
+有 simulator、示范数据尚待准备时，可以先建立 Gaussian PPO baseline。固定 reward、reset、observation 和 action semantics，输出学习曲线、成功率、掉落率、KL/clip fraction 与分段耗时；记录一致后，再根据具体失败现象选择后续方法。这一顺序以 [ppo-2017](bibliography.md#ppo-2017) 为起点，实施检查见 [05](05-ppo-enhancement.md#固定-ppo-更新与估计口径)。
 
-【机制相关】【需新证据】有成功 robot demonstrations 时，先验证 imitation 闭环，再决定 reward fine-tuning。先统一数据与部署动作、评估固定 reset 的 success 和偏离示范后的恢复；若 imitation 已满足任务，不因存在 RL 方法而追加复杂度。需要 fine-tuning 时再按 [dppo-2024](bibliography.md#dppo-2024) 的证据范围评估，不把其结果外推为灵巧手保证。
+已有成功 robot demonstrations 时，可以先验证 imitation 闭环，再决定是否进行 reward fine-tuning。统一数据与部署动作后，在固定 reset 下测 success 和偏离示范后的恢复；达到任务判据的 imitation 策略可以直接作为交付方案。有进一步优化需求时，再结合 [dppo-2024](bibliography.md#dppo-2024) 的实验设置设计 fine-tuning 对照。
 
-【机制相关】【需新证据】有 reference/base controller 时，先验证物理可行性与 base-only，再测 Gaussian residual，最后考虑换 actor。按 [03](03-retargeting-to-policy.md) 区分 BC、tracking 与 reset 用途，固定 controller/reference 的版本与 residual scale；若 base-only 已失稳或 reference 不可行，先修复这些接口，再用对照实验评估更复杂 actor 的作用。该顺序借鉴 [residual-rl-2018](bibliography.md#residual-rl-2018) 的控制分工，目标任务收益尚待验证。
+已有 reference 或 base controller 时，可以依次验证物理可行性、base-only 和 Gaussian residual，再评估生成式 actor。按 [03](03-retargeting-to-policy.md) 区分 BC、tracking 与 reset 用途，固定 controller、reference 的版本及 residual scale。这个顺序借鉴 [residual-rl-2018](bibliography.md#residual-rl-2018) 的控制分工，旨在先确定 reference 与控制接口各自的作用，再测目标任务收益。
 
 ## 首个实验与停止条件
 
-【需新证据】首个实验只回答一个可证伪的问题。写明失败信号、候选解释、唯一改动接口、共同数据/环境配置、seed 列表、interactions 与 wall-clock 上限、部署 latency 限制及事先定义的成功判据；输出 baseline 与对照的 per-seed 结果、失败类型和预算消耗，不用单次最高 return 选方法。具体记录与任务用途见 [04](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证) 和 [05](05-ppo-enhancement.md#评估顺序与停止条件)。
+首个实验应围绕一个可证伪的问题组织。写明失败信号、候选解释、唯一改动接口、共同数据与环境配置、seed 列表、interactions 与 wall-clock 上限、部署 latency 限制，以及事先定义的成功判据。报告 baseline 与对照的 per-seed 结果、失败类型和预算消耗，按完整结果判断方法；任务用途与记录要求见 [04](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证) 和 [05](05-ppo-enhancement.md#评估顺序与停止条件)。
 
-【机制相关】【需新证据】停止条件应区分接口错误与实验负结果。遇到 log-prob 不一致、不可行 reset、部署输入不可得或 latency 超预算，停止追加训练并修复接口；若预算耗尽且预定义 task metric 未改善，保留负结果，并把后续改动作为新的实验假设另行评估。若只改善训练 reward 而不改善固定测试分布的 success，应重查 reward 与任务目标的对应关系。
+停止条件应区分接口检查和实验结果。动作 log-prob 重算、reset 可行性、部署输入和 latency 预算中的任一检查失败时，暂停追加训练并修复对应接口。预算耗尽而预定义 task metric 持平或变差时，保留负结果，后续改动作为新假设评估；训练 reward 上升而固定测试 success 持平或下降时，重新检查奖励与任务目标的对应关系。
