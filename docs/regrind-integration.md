@@ -32,4 +32,4 @@ Action chunk 是一次预测的一段连续动作，执行其中若干步后再�
 
 执行命令与 policy 采样变量需要分别保存。PPO ratio 使用原始采样变量，Residual 相加、幅度缩放与 clipping 后的 command 单独保存用于执行核对；固定 controller 时的条件见 [04 固定执行 mapping](04-onpolicy-diffusion-interface.md#固定执行-mapping)，DPPO 与可逆模型各自需要的记录见 [04 Rollout 记录](04-onpolicy-diffusion-interface.md#rollout-记录)。
 
-Reference 的数据检查应先于 actor 比较。坐标系、joint order、时间戳、物体状态和实际执行动作的记录见 [03 链条与数据契约](03-retargeting-to-policy.md#链条与数据契约)，接触与 controller 可执行性检查见 [03 接触可行性与动力学鸿沟](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
+Reference 的数据检查应先于 actor 比较。坐标系、joint order、时间戳、物体状态和实际执行动作的记录见 [03 数据记录与执行检查](03-retargeting-to-policy.md#数据记录与执行检查)，接触与 controller 可执行性检查见 [03 接触可行性与动力学鸿沟](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。

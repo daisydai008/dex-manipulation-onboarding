@@ -52,31 +52,31 @@ KL-adaptive LR 可以作为优化控制的候选实验。预先定义辅助空�
 
 执行规则改变后，需要重新确认 rollout 的有效性。更新 reference、base controller、normalization、safety filter 或内部状态规则，都可能改变环境或 conditioning；old log-prob 记录解决的是策略概率比较，执行条件还需单独检查。Controller 与 actor 共同学习需要另行建立相应推导。对 REGRIND 的 reference-conditioned residual，可以先按 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟) 验证可执行性，再检查概率记录与数据收集时的约定是否一致。
 
-## 按诊断目的的任务验证
+## 按检查目的选择任务
 
 三个任务用于检查不同环节，可以分别开展实验。Shadow Hand 直接评估灵巧手控制，Franka cube lift 检查较简单的 manipulation 接口，Ant 观察优化实现在其他动力学中的行为。各任务的结果按自身指标解释，跨任务迁移与真机表现另外验证。
 
 环境定义统一引用 Isaac Lab v2.2.0 的 `Available Environments — Isaac Lab Documentation` 页面。下列链接固定了官方 hostname、版本 path、page title 和 section fragment，用于核对环境 ID、任务描述及列出的动作接口。具体实验中的 state/action 维度、观测配置和 actor 表现，分别通过配置检查与训练评估确定。
 
-三个任务共用一套比较协议。先建立 Gaussian baseline，再替换 actor，保持 reward、reset、observation、action semantics、训练数据与 seed 一致；若 actor、update schema 和 pretraining 同时改变，结果按组合方案归因。这样可以把每个任务中的特殊指标与共同的比较条件联系起来。
+三个任务共用一套对照实验设置。先建立 Gaussian baseline，再替换 actor，保持 reward、reset、observation、action semantics、训练数据与 seed 一致；若 actor、update schema 和 pretraining 同时改变，结果按组合方案归因。这样可以把每个任务中的特殊指标与共同的比较条件联系起来。
 
 ### Shadow Hand cube reorientation：灵巧主任务
 
 `Isaac-Repose-Cube-Shadow-Direct-v0` 在 [Isaac Lab v2.2.0 / manipulation](https://isaac-sim.github.io/IsaacLab/v2.2.0/source/overview/environments.html#manipulation) 中对应 Shadow hand 的 cube in-hand reorientation。实验固定使用这一 ID；OpenAI-FF、OpenAI-LSTM 和 vision 变体各有自己的配置，sensor specification、state/action 维度与部署条件应按实际配置核验。
 
-该任务可以直接测量多指接触下的姿态控制与掉落。按照共用协议固定 observation，明确 privileged split、history 和 delay，比较预定义姿态成功率、掉落率、environment interactions、wall-clock 与 inference latency。初始 grasp、物体或 reference 改变后，重新建立相应 baseline。
+该任务可以直接测量多指接触下的姿态控制与掉落。按照共用实验设置固定 observation，明确 privileged split、history 和 delay，比较预定义姿态成功率、掉落率、environment interactions、wall-clock 与 inference latency。初始 grasp、物体或 reference 改变后，重新建立相应 baseline。
 
 ### Franka cube lift：较简单 manipulation 接口
 
 `Isaac-Lift-Cube-Franka-v0` 在 [Isaac Lab v2.2.0 / manipulation](https://isaac-sim.github.io/IsaacLab/v2.2.0/source/overview/environments.html#manipulation) 中对应采用 joint position control 的 Franka cube lift。实验按这一精确 ID 核验接口，IK-Abs 与 IK-Rel 变体分别对应其他动作配置。
 
-该任务可以在较简单的 manipulation 设置下检查采样、command 与奖励闭环。按照共用协议预定义 lift success 和掉落事件，报告成功率、掉落率、environment interactions、wall-clock 与 inference latency。灵巧手中的接触与迁移表现由手部任务另行评估。
+该任务可以在较简单的 manipulation 设置下检查采样、command 与奖励闭环。按照共用实验设置预定义 lift success 和掉落事件，报告成功率、掉落率、environment interactions、wall-clock 与 inference latency。灵巧手中的接触与迁移表现由手部任务另行评估。
 
 ### Ant：优化实现对照
 
 `Isaac-Ant-v0` 在 [Isaac Lab v2.2.0 / classic](https://isaac-sim.github.io/IsaacLab/v2.2.0/source/overview/environments.html#classic) 中对应 MuJoCo ant robot 的定向运动任务。本节选择 manager-based ID，`Isaac-Ant-Direct-v0` 属于另一环境配置。
 
-Ant 用于观察 ratio、entropy/KL 估计和优化控制的行为。按照共用协议预定义该配置的 episodic return、目标方向位移与 episode length，报告 environment interactions、wall-clock、inference latency 和 KL/clip fraction；掉落率记 N/A。Ant return 与 manipulation 指标分别报告，其结果用于优化实现诊断。
+Ant 用于观察 ratio、entropy/KL 估计和优化控制的行为。按照共用实验设置预定义该配置的 episodic return、目标方向位移与 episode length，报告 environment interactions、wall-clock、inference latency 和 KL/clip fraction；掉落率记 N/A。Ant return 与 manipulation 指标分别报告，其结果用于优化实现检查。
 
 每个任务都应分别比较交互预算和计算预算。报告固定 interactions 与固定 wall-clock 下的结果，同时记录硬件、batch、denoising steps、action horizon、初始化或预训练来源，以及预算耗尽条件。Action horizon 和 denoising horizon 是两个独立维度，可参照 [dppo-2024](bibliography.md#dppo-2024) v3 §3、§4.3；比较 density 计算方式时应控制这些条件，多个条件共同变化时按组合解释结果。
 

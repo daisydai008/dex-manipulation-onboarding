@@ -4,7 +4,7 @@
 
 Retargeting 将人类运动转换为机器人参考运动，后续学习接口决定怎样使用这些结果。[dexcap-2024](bibliography.md#dexcap-2024) 将 IK 与 imitation 结合，[robotic-telekinesis-2022](bibliography.md#robotic-telekinesis-2022) 生成平滑、无 self-collision 的轨迹，[deepmimic-2018](bibliography.md#deepmimic-2018) 则训练以 motion 为条件的 physics-based policy。三篇工作分别提供数据采集、轨迹处理和运动跟踪的参照。
 
-## 链条与数据契约
+## 数据记录与执行检查
 
 从人类运动到闭环策略，可以分成运动与场景观测、机器人运动学 reference、接触与动力学校验、学习信号、policy 与 controller 五段。每段应保留坐标系、joint order、时间戳、object pose、接触信息的可用性，以及实际下发的机器人动作。这种接口拆分是结合 [dexcap-2024](bibliography.md#dexcap-2024) 和 [residual-rl-2018](bibliography.md#residual-rl-2018) 提出的工程建议，可以据此检查目标任务的数据是否完整。
 

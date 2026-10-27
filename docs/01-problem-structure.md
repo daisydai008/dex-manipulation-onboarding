@@ -34,7 +34,7 @@ Tactile 可补充视觉难以推断的接触信号，完整可观测性还需结
 
 History、recurrence 与延迟应独立于 modality 报告。[openai-rubiks-2019](bibliography.md#openai-rubiks-2019) 的 abstract 明确提到 memory-augmented model，后续核查应确定其历史窗口长度。State-space 维度描述模型输入，deployable sensor specification 需另列硬件与采样配置；diffusion timestep embedding 描述去噪迭代，observation history 需单独定义。
 
-比较 partial observability 时，可以固定观测权限、采样时间和失效注入协议，分别评估 privileged state、可部署感知、加入 history/recurrence、加入 observation/action delay 四种变化，并报告 state-estimation error、控制成功率和失败类型；这些结果用于判断各因素的实际影响。
+比较 partial observability 时，可以固定观测权限、采样时间和故障注入方案，分别评估 privileged state、可部署感知、加入 history/recurrence、加入 observation/action delay 四种变化，并报告 state-estimation error、控制成功率和失败类型；这些结果用于判断各因素的实际影响。
 
 ## 硬件与 benchmark 可比性
 
@@ -44,7 +44,7 @@ History、recurrence 与延迟应独立于 modality 报告。[openai-rubiks-2019
 
 Bi-DexHands 的结果应区分单任务与 multi-task 设置。[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 的 abstract 明确区分单任务成功与多数 multi-task/few-shot 设置失败，并报告 single-/multi-agent 设置；后续比较应逐项记录动作语义、初始握持状态与 sim-to-real 设置。
 
-比较 IsaacLab 任务时应固定版本与 registry ID，名字相近的任务需逐项核对配置。[isaac-lab-2023](bibliography.md#isaac-lab-2023) 的原文题名是 Orbit，固定版本的 registry ID 与任务用途见 [04](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证)，当前环境配置以所选版本的官方文档为准。
+比较 IsaacLab 任务时应固定版本与 registry ID，名字相近的任务需逐项核对配置。[isaac-lab-2023](bibliography.md#isaac-lab-2023) 的原文题名是 Orbit，固定版本的 registry ID 与任务用途见 [04](04-onpolicy-diffusion-interface.md#按检查目的选择任务)，当前环境配置以所选版本的官方文档为准。
 
 跨论文比较前，可以逐项记录以下五类条件：
 

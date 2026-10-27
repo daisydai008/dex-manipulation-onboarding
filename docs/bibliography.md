@@ -8,7 +8,7 @@
 
 【条件推导】用于列明前提后自足成立的数学关系，见 [04](04-onpolicy-diffusion-interface.md#概率对象)。它提供独立的推导依据，不能替代论文实验，也不证明任意 sampler 满足可逆性、change-of-variables 或 Jacobian 可计算条件，更不证明训练收益。
 
-【官方工程文档】只支持固定版本的 registry/interface 事实，不是 actor-gain 证据，也不计为新增论文。精确版本、URL、page title 和 fragment 随 [04 的任务协议](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证) 记录；检查器从全部交付 Markdown 收集此类来源并核验最终 URL、状态、标题与 anchor。
+【官方工程文档】只支持固定版本的 registry/interface 事实，不是 actor-gain 证据，也不计为新增论文。精确版本、URL、page title 和 fragment 随 [04 的任务设置](04-onpolicy-diffusion-interface.md#按检查目的选择任务) 记录；检查器从全部交付 Markdown 收集此类来源并核验最终 URL、状态、标题与 anchor。
 
 ## openai-inhand-2020
 - paper-id：openai-inhand-2020
@@ -110,7 +110,7 @@
 - evidence：v2 abstract
 - 解决什么问题：提供统一、模块化且 GPU 加速的机器人学习环境构建框架。
 - 方法与信号是什么：基于 NVIDIA Isaac Sim 组织 rigid/deformable simulation、传感器、motion generator、RL 与 demonstration collection。
-- 验证到哪里及缺口：已覆盖证据：abstract 列出 16 个机器人平台、4 种 sensor modality、10 个 motion generator 和 20+ benchmark task。后续核查：特定灵巧手任务的可比协议。
+- 验证到哪里及缺口：已覆盖证据：abstract 列出 16 个机器人平台、4 种 sensor modality、10 个 motion generator 和 20+ benchmark task。后续核查：特定灵巧手任务的可比实验设置。
 - 对两类读者有什么用：【推测】diffusion/on-policy 读者可把它作为大规模 on-policy 实验平台背景，retargeting 读者可据其模块划分规划 reference、observation 与 action 接口。
 - 主源：[arXiv v2](https://arxiv.org/abs/2301.04195v2)
 
@@ -279,7 +279,7 @@
 - evidence：v1 abstract
 - 解决什么问题：检验多指接触任务能否在低成本真机上直接用 model-free deep RL 从零学习。
 - 方法与信号是什么：直接从 sensor reading 到 action，并测试少量 demonstrations 对学习速度的影响。
-- 验证到哪里及缺口：已覆盖证据：abstract 报告多数任务从零约 4–7 小时、加 demonstrations 后约 2–3 小时。后续核查：任务协议和现代 PPO 对照。
+- 验证到哪里及缺口：已覆盖证据：abstract 报告多数任务从零约 4–7 小时、加 demonstrations 后约 2–3 小时。后续核查：任务设置和现代 PPO 对照。
 - 对两类读者有什么用：【推测】它提供真机在线 RL 的历史参照，但其时间数字不能直接外推到 diffusion policy 或 REGRIND。
 - 主源：[arXiv v1](https://arxiv.org/abs/1810.06045v1)
 

@@ -4,23 +4,23 @@
 
 选型从两个事实开始：现有数据、环境和控制器决定了哪些方案可执行，训练中的失败现象决定了先检查哪个接口。把这两条线索分开记录，首个实验才有明确的归因对象。
 
-## 任务契约
+## 任务定义与成功判据
 
-先把 benchmark 名称展开为可复现的任务契约。按 [01](01-problem-structure.md#任务谱系) 写明研究对象属于 in-hand、grasp acquisition、arm-hand、双手还是 long-horizon，并定义 success、掉落、超时和恢复行为。初始接触、测试物体与部署初始分布也要一并记录，它们共同规定回报数字与成功率的含义。
+先把 benchmark 名称展开为可复现的任务定义和成功判据。按 [01](01-problem-structure.md#任务谱系) 写明研究对象属于 in-hand、grasp acquisition、arm-hand、双手还是 long-horizon，并定义 success、掉落、超时和恢复行为。初始接触、测试物体与部署初始分布也要一并记录，它们共同规定回报数字与成功率的含义。
 
-观测与动作契约接着固定训练和部署的输入输出。观测侧分别列出 actor、critic 使用的 privileged state、视觉、proprioception、tactile、history/recurrence，以及采样时间和 delay；动作侧写明 target/delta/velocity/torque、control rate、action chunk 与执行 mapping，待核查项单独列出。训练使用了部署侧难以直接取得的输入时，先确定部署感知来源并验证接口，再评估 actor 容量的影响；相关实例与核查项见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
+观测与动作定义接着固定训练和部署的输入输出。观测侧分别列出 actor、critic 使用的 privileged state、视觉、proprioception、tactile、history/recurrence，以及采样时间和 delay；动作侧写明 target/delta/velocity/torque、control rate、action chunk 与执行 mapping，待核查项单独列出。训练使用了部署侧难以直接取得的输入时，先确定部署感知来源并验证接口，再评估 actor 容量的影响；相关实例与核查项见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
 
-## 资源盘点
+## 现有资源与约束
 
-资源盘点把候选方法落实为准备清单。先确认 simulator、reward 和 reset 可以复现，再检查成功 robot demonstrations 是否包含同步观测和动作，reference 能否重建 joint/object state，以及 base controller 能否独立闭环。Retargeting 数据的有效性通过执行结果确认，几何误差与接触成功分别记录，检查方法见 [03](03-retargeting-to-policy.md#链条与数据契约)。
+现有资源与约束决定候选方法需要哪些准备。先确认 simulator、reward 和 reset 可以复现，再检查成功 robot demonstrations 是否包含同步观测和动作，reference 能否重建 joint/object state，以及 base controller 能否独立闭环。Retargeting 数据的有效性通过执行结果确认，几何误差与接触成功分别记录，检查方法见 [03 数据记录与执行检查](03-retargeting-to-policy.md#数据记录与执行检查)。
 
 训练预算与部署约束需要分开测量。训练侧记录可用 environment interactions、wall-clock 和显存，部署侧记录推理 latency 与允许的控制周期。人类视频提供运动线索，robot action labels 还需经过形态映射和执行记录对齐；真机采样能力则由实际采集周期和延迟决定。完成这份清单后，再选择采集、imitation、RL 或组合路线。
 
-## 瓶颈诊断：由可观察信号驱动
+## 失败现象与排查顺序
 
 失败现象决定先检查哪个接口，actor 参数化留到接口一致后比较。更新、接触、动作表示与计算效率各自对应不同的记录和排查顺序。
 
-更新后 KL 或 clip fraction 突变时，先核对同一 action 的 old/new log-prob、advantage、normalization 和 done/truncation 处理，再分别调整 LR、epoch 或 clip。[implementation-matters-2020](bibliography.md#implementation-matters-2020) 说明了实现差异对结果归因的重要性；这里的检查顺序是据此提出的诊断方案，具体项目见 [05 selector](05-ppo-enhancement.md#从失败信号选择接口)。
+更新后 KL 或 clip fraction 突变时，先核对同一 action 的 old/new log-prob、advantage、normalization 和 done/truncation 处理，再分别调整 LR、epoch 或 clip。[implementation-matters-2020](bibliography.md#implementation-matters-2020) 说明了实现差异对结果归因的重要性；这里的检查顺序是据此提出的排查方案，具体项目见 [05 selector](05-ppo-enhancement.md#从失败信号选择接口)。
 
 轨迹几何贴合而物体仍滑落时，重点转向接触与控制。按 phase 记录 reference error、object motion、接触失败、base-only 成功率和 residual 饱和情况，核对 reference、base controller 与 reset 的可执行性。早期失败使后续 phase 很少得到采样时，可以单独比较 phase resets 或 curriculum，并始终从固定部署初始状态报告 end-to-end success，详见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
 
@@ -58,7 +58,7 @@ Diffusion policy 用条件生成模型学习示范中的动作分布，适合研
 
 Diffusion 与 RL 的结合覆盖两条路径：利用静态数据改进策略，以及利用任务奖励继续训练 imitation 策略。[diffusion-ql-2022](bibliography.md#diffusion-ql-2022) 与 [idql-2023](bibliography.md#idql-2023) 提供 offline 路线，[dppo-2024](bibliography.md#dppo-2024) v3 §4–5 介绍 denoising-step PPO 与 fine-tuning。研究 Gaussian actor 在一致条件下的表示限制时，还需针对所选 sampler 核查可逆性与 exact density。
 
-Offline 方法从静态数据学习，on-policy fine-tuning 需要可交互环境，因此数据与交互资源应分别盘点。两者都需要清晰的 baseline，on-policy 方法还需确定 probability object 和 rollout schema。额外成本包括 sampling、likelihood 求值、denoising trajectory 或 auxiliary action 存储、update compute，以及数据来源和版本管理。
+Offline 方法从静态数据学习，on-policy fine-tuning 需要可交互环境，因此数据与交互资源应分别列出。两者都需要清晰的 baseline，on-policy 方法还需确定 probability object 和 rollout schema。额外成本包括 sampling、likelihood 求值、denoising trajectory 或 auxiliary action 存储、update compute，以及数据来源和版本管理。
 
 ## 三条起步路线
 
@@ -72,7 +72,7 @@ Offline 方法从静态数据学习，on-policy fine-tuning 需要可交互环�
 
 ## 首个实验与停止条件
 
-五个方法族共用一套对照原则：先指定唯一受测变量，再固定其余实验条件。每个对照只改变一个接口，分别报告固定 interactions 与固定 wall-clock 下的 per-seed 结果，并记录失败类型和预算消耗；若多个接口同时改变，结果按组合方案归因。首个实验还应写明失败信号、候选解释、共同环境配置、部署 latency 限制和事先定义的成功判据，任务用途与记录要求见 [04](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证) 和 [05](05-ppo-enhancement.md#评估顺序与停止条件)。
+五个方法族采用同一套对照实验设置：先指定唯一受测变量，再固定其余实验条件。每个对照只改变一个接口，分别报告固定 interactions 与固定 wall-clock 下的 per-seed 结果，并记录失败类型和预算消耗；若多个接口同时改变，结果按组合方案归因。首个实验还应写明失败信号、候选解释、共同环境配置、部署 latency 限制和事先定义的成功判据，任务用途与记录要求见 [04](04-onpolicy-diffusion-interface.md#按检查目的选择任务) 和 [05](05-ppo-enhancement.md#评估顺序与停止条件)。
 
 各方法族的特定比较项如下：
 
