@@ -6,9 +6,9 @@ Dexterous manipulation 需要先按任务、观测与执行接口分解，不能
 
 ## 任务谱系
 
-In-hand reorientation 关注已建立接触后的物体姿态控制，并不自动包含从桌面拿起物体的能力。[openai-inhand-2020](bibliography.md#openai-inhand-2020)、[dextreme-2022](bibliography.md#dextreme-2022) 与 [visual-dexterity-2022](bibliography.md#visual-dexterity-2022) 覆盖仿真训练到真机重定向；它们支持讨论 finger gaiting、物体观测与形状泛化，但各自初始接触分布在 abstract 中未报告，不能默认相同。
+In-hand reorientation 关注已建立接触后的物体姿态控制，抓取获取则另行计量。三篇工作的初始接触条件具体不同：[openai-inhand-2020](bibliography.md#openai-inhand-2020) 在 Appendix C.1 中先把物体以随机朝向放在掌心，再执行 100 步随机动作，并丢弃期间掉落的 trial；[dextreme-2022](bibliography.md#dextreme-2022) §2.1 从掌心物体开始并采样 SO(3) 目标，官方 `reset_idx` 在默认 `apply_random_quat=True` 时为物体采样随机四元数，并对物体位置与默认手型加噪、清零物体速度；[visual-dexterity-2022](bibliography.md#visual-dexterity-2022) Summary 采用手指范围内的随机 SE(3) 初始配置，物体由桌面放置或人手递交，hand 采用 downward-facing，并分别测试有支撑桌面与无支撑桌面的设置。比较结果时应按这些初始条件分组，分别报告连续重定向次数与适用设置。
 
-Grasp acquisition 与后续 manipulation 应分别计量。[dexdiffuser-2023](bibliography.md#dexdiffuser-2023) 从 partial point cloud 生成、评估和 refine grasps，其验证对象是 grasp success；【机制相关】【推测】regrasp 可以作为重定向失败后的恢复过程，但 grasp generation 的证据不能推出该过程可连续完成；状态切换与恢复成功率【需新证据】。
+Grasp acquisition 与后续 manipulation 应分别计量。[dexdiffuser-2023](bibliography.md#dexdiffuser-2023) 从 partial point cloud 生成、评估和 refine grasps，其验证对象是单次 grasp success。Regrasp 则是闭环恢复过程：物体滑落后，系统重新建立稳定接触并继续原任务。[visual-dexterity-2022](bibliography.md#visual-dexterity-2022) 在带桌面支撑的设置中报告了这种现象：物体掉落后，控制器会再次拾起并继续重定向。评估 regrasp 时，可分别记录掉落检测、重新抓取成功率、恢复后任务完成率和恢复耗时，与单次 grasp generation success 分开统计。
 
 Arm-hand 协同需要同时处理到达、姿态和手部接触，而不是只把 hand-only policy 的维度加宽。[dexpilot-2020](bibliography.md#dexpilot-2020) 与 [anyteleop-2023](bibliography.md#anyteleop-2023) 的证据属于 teleoperation，[demostart-2024](bibliography.md#demostart-2024) 则包含三指手臂-手的 learned policy；它们的相机、动作接口和示范使用方式不同。
 

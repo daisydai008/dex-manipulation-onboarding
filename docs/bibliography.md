@@ -1,6 +1,6 @@
 # 注释书目
 
-本文件是入选作品的唯一逐篇注释位置；其他文档只通过稳定 paper ID 指向这里。除 [dppo-2024](#dppo-2024) 的机制说明、[diffusion-policy-2023](#diffusion-policy-2023) v5 §2.1–2.3 与 §4.3，以及七篇真机灵巧手 diffusion 部署条目（dexvla-2025、dexwild-2025、dexumi-2025、dexcast-2026、human2dex-2026、skillweave-2026、modex-2026）使用全文或指定章节外，其余条目的证据上限是所记录版本的 abstract 与公开元数据，超出该范围的分析明确标为【推测】。书目不冻结，可经全文核实后新增。
+本文件是入选作品的唯一逐篇注释位置；其他文档只通过稳定 paper ID 指向这里。除 [dppo-2024](#dppo-2024) 的机制说明、[diffusion-policy-2023](#diffusion-policy-2023) v5 §2.1–2.3 与 §4.3、[openai-inhand-2020](#openai-inhand-2020) Appendix C.1、[dextreme-2022](#dextreme-2022) §2.1 与官方 reset 实现、[visual-dexterity-2022](#visual-dexterity-2022) Summary 与 Results，以及七篇真机灵巧手 diffusion 部署条目（dexvla-2025、dexwild-2025、dexumi-2025、dexcast-2026、human2dex-2026、skillweave-2026、modex-2026）使用全文、指定章节或官方实现外，其余条目的证据上限是所记录版本的 abstract 与公开元数据，超出该范围的分析明确标为【推测】。书目不冻结，可经全文核实后新增。
 
 ## 证据约定
 
@@ -16,10 +16,10 @@
 - authors-year：Andrychowicz 等，2018
 - arxiv：1808.00177v5
 - tier：core
-- evidence：v5 abstract
+- evidence：v5 abstract；Appendix C.1（initial states）
 - 解决什么问题：研究仅在仿真训练的策略能否在物理 Shadow Hand 上完成视觉闭环的物体重定向。
 - 方法与信号是什么：使用 RL、视觉物体状态与广泛的物理及外观 randomization，不依赖人类示范。
-- 验证到哪里及缺口：已覆盖证据：abstract 报告策略从仿真迁移到真机，并出现 finger gaiting 等行为。 不支持的结论：动作语义、延迟和具体观测历史未报告。
+- 验证到哪里及缺口：已覆盖证据：abstract 报告策略从仿真迁移到真机，并出现 finger gaiting 等行为；Appendix C.1 记录初始状态采样：掌心随机朝向放置物体后执行 100 步随机动作，并丢弃期间掉落的 trial。 不支持的结论：动作语义、延迟和具体观测历史未报告。
 - 对两类读者有什么用：【推测】diffusion/on-policy 读者 可把它作为生成式策略之外的 sim-to-real 对照，retargeting 读者可把它作为直接从任务奖励学习接触策略的基线。
 - 主源：[arXiv v5](https://arxiv.org/abs/1808.00177v5)
 
@@ -42,10 +42,10 @@
 - authors-year：Handa 等，2022
 - arxiv：2210.13702v2
 - tier：core
-- evidence：v2 abstract
+- evidence：v2 abstract；§2.1；官方 IsaacGymEnvs `reset_idx`（commit 665c321）
 - 解决什么问题：研究多指灵巧操作策略和物体 pose estimator 如何跨越仿真到现实的差异。
 - 方法与信号是什么：在 Isaac Gym 中训练适应广泛条件的 Allegro Hand 策略，并配合实时视觉 pose estimation。
-- 验证到哪里及缺口：已覆盖证据：abstract 报告 vision policy 在同一重定向任务上优于既有视觉策略，且接近 privileged-state 策略。 不支持的结论：历史、延迟和控制频率未报告。
+- 验证到哪里及缺口：已覆盖证据：abstract 报告 vision policy 在同一重定向任务上优于既有视觉策略，且接近 privileged-state 策略；§2.1 从掌心物体开始并采样 SO(3) 目标，官方 `reset_idx`（commit 665c321）在默认 `apply_random_quat=True` 时为物体采样随机四元数，并对物体位置与默认手型加噪、清零物体速度。 不支持的结论：历史、延迟和控制频率未报告。
 - 对两类读者有什么用：【推测】diffusion/on-policy 读者 可用它界定视觉闭环测试，retargeting 读者可用它分离 state estimation 与 policy adaptation。
 - 主源：[arXiv v2](https://arxiv.org/abs/2210.13702v2)
 
@@ -55,10 +55,10 @@
 - authors-year：Chen 等，2022；Science Robotics 2023
 - arxiv：2211.11744v3
 - tier：core
-- evidence：v3 abstract
+- evidence：v3 abstract；Summary；Results 的 SO(3) object reorientation in air
 - 解决什么问题：研究单个 commodity depth camera 能否支持新颖复杂形状的实时任意旋转重定向。
 - 方法与信号是什么：在仿真中用 RL 训练视觉控制器，再在未见物体上进行真机评估。
-- 验证到哪里及缺口：已覆盖证据：abstract 报告 median reorientation time 接近 7 秒，并给出 duck 物体的掉落率和角度成功统计。 不支持的结论：动作语义和训练细节未报告。
+- 验证到哪里及缺口：已覆盖证据：abstract 报告 median reorientation time 接近 7 秒，并给出 duck 物体的掉落率和角度成功统计；Summary 记录手指范围内随机 SE(3) 初始配置、桌面放置或人手递交及 downward-facing hand，Results 记录桌面支撑下掉落后拾起并继续重定向。 不支持的结论：动作语义和训练细节未报告。
 - 对两类读者有什么用：【推测】diffusion/on-policy 读者 可把新物体视觉条件作为接口压力测试，retargeting 读者可把物体泛化与接触稳定性作为分离指标。
 - 主源：[arXiv v3](https://arxiv.org/abs/2211.11744v3)
 
