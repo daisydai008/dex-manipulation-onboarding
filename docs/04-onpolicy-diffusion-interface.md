@@ -44,7 +44,7 @@ D_KL(qold || qθ | c) = E_{ξ~qold(·|c)}[log qold(ξ|c) − log qθ(ξ|c)]
 
 【条件推导】固定且与待更新 policy 参数无关的执行 mapping 可以折入环境，不要求 mapping 可逆。令 `s` 是包含 controller 状态的完整环境状态、`c=h(s)` 是本次决策的 conditioning，`u=g(s,ξ)` 在数据收集与相关更新期间不变，则可定义 `P̃(s'|s,ξ)=P(s'|s,g(s,ξ))`、`R̃(s,ξ)=R(s,g(s,ξ))`。在这个辅助动作环境中，policy 仍按 `qθ(ξ|c)` 采样并按同一个 `ξ` 计算 ratio；此推导不赋予 PPO 超出其原有近似目标的保证。
 
-【条件推导】固定 base controller、residual scale 与 clipping 不因非可逆而自动破坏 auxiliary-space PPO。例如 `u=clip(b(s)+αξ)` 可作为 `g`，前提是 `b`、`α`、clipping 规则与相关 controller 状态转移不依赖待更新参数，并保存原始 `ξ`。被否定的是“auxiliary density 就是 executed-action density”的解释，而不是 residual composition 本身；[residual-rl-2018](bibliography.md#residual-rl-2018) 只提供 control-signal superposition 的独立工程动机，不是本推导的实验验证。
+【条件推导】固定 base controller、residual scale 与 clipping 不因非可逆而自动破坏 auxiliary-space PPO。例如 `u=clip(b(s)+αξ)` 可作为 `g`，前提是 `b`、`α`、clipping 规则与相关 controller 状态转移不依赖待更新参数，并保存原始 `ξ`。这里仅排除“auxiliary density 就是 executed-action density”的解释，residual composition 仍可在上述前提下使用；[residual-rl-2018](bibliography.md#residual-rl-2018) 只提供 control-signal superposition 的独立工程动机，不是本推导的实验验证。
 
 【条件推导】带内部状态的 controller/filter 必须作为环境动力学的一部分描述。若状态 `m_t` 会影响执行 command，应明确 `(s_t,m_t)` 的转移和 reset；policy 若使用该状态，则还须在 conditioning 中保存或可重建。把有记忆 controller 当作仅依赖当前 observation 的无状态函数，会遗漏本推导的前提。
 
@@ -62,7 +62,7 @@ D_KL(qold || qθ | c) = E_{ξ~qold(·|c)}[log qold(ξ|c) − log qθ(ξ|c)]
 
 【官方工程文档】`Isaac-Repose-Cube-Shadow-Direct-v0` 在 [Isaac Lab v2.2.0 / manipulation](https://isaac-sim.github.io/IsaacLab/v2.2.0/source/overview/environments.html#manipulation) 列为 Shadow hand 的 cube in-hand reorientation。这里使用这一精确 ID，不与 OpenAI-FF、OpenAI-LSTM 或 vision 变体混用，也不从名称推断 sensor specification、state/action 维度或部署配置。
 
-【机制相关】【需新证据】选择该任务是为了直接观察多指接触下的姿态控制与掉落，而不是把更广泛的 arm-hand 能力当作已覆盖。两组在共用协议下固定 observation（含 privileged split/history/delay），比较预定义姿态成功率、掉落率、environment interactions、wall-clock 与 inference latency；更换初始 grasp、物体或 reference 后须重新建立 baseline。
+【机制相关】【需新证据】选择该任务是为了直接观察多指接触下的姿态控制与掉落，评估范围限定在这一任务形态。两组在共用协议下固定 observation（含 privileged split/history/delay），比较预定义姿态成功率、掉落率、environment interactions、wall-clock 与 inference latency；更换初始 grasp、物体或 reference 后须重新建立 baseline。
 
 ### Franka cube lift：较简单 manipulation 接口
 
@@ -74,8 +74,8 @@ D_KL(qold || qθ | c) = E_{ξ~qold(·|c)}[log qold(ξ|c) − log qθ(ξ|c)]
 
 【官方工程文档】`Isaac-Ant-v0` 在 [Isaac Lab v2.2.0 / classic](https://isaac-sim.github.io/IsaacLab/v2.2.0/source/overview/environments.html#classic) 列为 MuJoCo ant robot 的定向运动任务。这里选 manager-based ID，不与 `Isaac-Ant-Direct-v0` 混用。
 
-【机制相关】【需新证据】选择 Ant 是为了检查 ratio、entropy/KL 估计与优化控制在非 manipulation 任务中的行为，而不是把 locomotion 成绩当作抓取证据。两组在共用协议下事先定义任务指标（如该配置的 episodic return、目标方向位移与 episode length），并报告 environment interactions、wall-clock、inference latency 和 KL/clip fraction；掉落率记 N/A，Ant return 与两个 manipulation 任务分别报告。
+【机制相关】【需新证据】选择 Ant 是为了检查 ratio、entropy/KL 估计与优化控制在非 manipulation 任务中的行为，其结果仅用于优化实现诊断，不用于支撑抓取结论。两组在共用协议下事先定义任务指标（如该配置的 episodic return、目标方向位移与 episode length），并报告 environment interactions、wall-clock、inference latency 和 KL/clip fraction；掉落率记 N/A，Ant return 与两个 manipulation 任务分别报告。
 
 【需新证据】任务协议还应分开交互预算和计算预算。每个任务报告固定 interactions 下的结果和固定 wall-clock 下的结果，注明硬件、batch、denoising steps、action horizon、初始化/预训练来源及预算耗尽条件；action horizon 与 denoising horizon 是不同维度，参见 [dppo-2024](bibliography.md#dppo-2024) v3 §3、§4.3。更换这些条件后，不能将差异单独归因于 density 计算方式。
 
-【需新证据】仿真验证与真机在线 fine-tuning 必须分开规划。[dppo-2024](bibliography.md#dppo-2024) v3 §5.4 的 One-leg hardware evaluation 是 zero-shot 部署而非 real-data fine-tuning/co-training；本章任务设计也不提供真机在线学习证据。真机前需另行核对部署观测、latency、执行限制与硬件安全流程，概率接口正确后还需通过独立的安全检查。
+【需新证据】仿真验证与真机在线 fine-tuning 必须分开规划。[dppo-2024](bibliography.md#dppo-2024) v3 §5.4 的 One-leg hardware evaluation 属于 zero-shot 部署，real-data fine-tuning/co-training 需另行规划；本章任务设计聚焦于仿真接口验证。真机前需另行核对部署观测、latency、执行限制与硬件安全流程，概率接口正确后还需通过独立的安全检查。

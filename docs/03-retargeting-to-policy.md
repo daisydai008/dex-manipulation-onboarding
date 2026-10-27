@@ -18,7 +18,7 @@ human motion + object/scene observation
 
 ## 用途一：BC 数据
 
-【机制相关】【推测】BC 把 reference 变成 observation-action supervision，部署策略可以学习任务相关动作，而非逐帧复现原 trajectory。[dexcap-2024](bibliography.md#dexcap-2024) 直接验证 mocap、IK 与 point-cloud imitation 的组合，[dapg-2018](bibliography.md#dapg-2018) 直接验证 demonstrations 对 RL sample complexity 的帮助；二者是否适用于任意离线 retargeting 输出，需按数据质量单独评估。
+【机制相关】【推测】BC 把 reference 变成 observation-action supervision，部署策略可以学习任务相关动作，轨迹复现程度由任务需求决定。[dexcap-2024](bibliography.md#dexcap-2024) 直接验证 mocap、IK 与 point-cloud imitation 的组合，[dapg-2018](bibliography.md#dapg-2018) 直接验证 demonstrations 对 RL sample complexity 的帮助；二者是否适用于任意离线 retargeting 输出，需按数据质量单独评估。
 
 一种可行做法是同时保存部署可见观测、机器人实际执行动作与优化器输出的 joint target，并分别评估 kinematic reference、经过 controller 后的 executed trajectory、成功与失败 contact segment；[diffusion-policy-2023](bibliography.md#diffusion-policy-2023) 可作为 action-generation 模型，retargeting-specific data repair 则需另行验证。
 

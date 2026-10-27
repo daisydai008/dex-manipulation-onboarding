@@ -6,7 +6,13 @@ Dexterous manipulation 需要先按任务、观测与执行接口分解，比较
 
 ## 任务谱系
 
-In-hand reorientation 关注已建立接触后的物体姿态控制，抓取获取则另行计量。三篇工作的初始接触条件具体不同：[openai-inhand-2020](bibliography.md#openai-inhand-2020) 在 Appendix C.1 中先把物体以随机朝向放在掌心，再执行 100 步随机动作，并丢弃期间掉落的 trial；[dextreme-2022](bibliography.md#dextreme-2022) §2.1 从掌心物体开始并采样 SO(3) 目标，官方 `reset_idx` 在默认 `apply_random_quat=True` 时为物体采样随机四元数，并对物体位置与默认手型加噪、清零物体速度；[visual-dexterity-2022](bibliography.md#visual-dexterity-2022) Summary 采用手指范围内的随机 SE(3) 初始配置，物体由桌面放置或人手递交，hand 采用 downward-facing，并分别测试有支撑桌面与无支撑桌面的设置。比较结果时应按这些初始条件分组，分别报告连续重定向次数与适用设置。
+In-hand reorientation 关注已建立接触后的物体姿态控制，抓取获取则另行计量。三篇工作给出了三种不同的初始接触设置：
+
+- [openai-inhand-2020](bibliography.md#openai-inhand-2020)：Appendix C.1 先把物体以随机朝向放在掌心，再执行 100 步随机动作，并丢弃期间掉落的 trial。
+- [dextreme-2022](bibliography.md#dextreme-2022)：§2.1 从掌心物体开始并采样 SO(3) 目标；官方 `reset_idx` 在默认 `apply_random_quat=True` 时为物体采样随机四元数，并对物体位置与默认手型加噪、清零物体速度。
+- [visual-dexterity-2022](bibliography.md#visual-dexterity-2022)：Summary 采用手指范围内的随机 SE(3) 初始配置，物体由桌面放置或人手递交，hand 采用 downward-facing，并分别测试有支撑桌面与无支撑桌面的设置。
+
+比较结果时应按这些初始条件分组，分别报告连续重定向次数与适用设置。
 
 Grasp acquisition 与后续 manipulation 应分别计量。[dexdiffuser-2023](bibliography.md#dexdiffuser-2023) 从 partial point cloud 生成、评估和 refine grasps，其验证对象是单次 grasp success。Regrasp 则是闭环恢复过程：物体滑落后，系统重新建立稳定接触并继续原任务。[visual-dexterity-2022](bibliography.md#visual-dexterity-2022) 在带桌面支撑的设置中报告了这种现象：物体掉落后，控制器会再次拾起并继续重定向。评估 regrasp 时，可分别记录掉落检测、重新抓取成功率、恢复后任务完成率和恢复耗时，与单次 grasp generation success 分开统计。
 
@@ -18,9 +24,11 @@ Long-horizon 组合的困难包括子任务之间的可达性和失败恢复。[
 
 ## 观测与部分可观测性
 
-Observation modality 应作为所有方法族的横切变量单独记录。视觉、proprioception、tactile、privileged simulator state 应分别记录 actor 与 critic 的输入；若 actor 在训练时可直接访问部署阶段无法获得的物体状态，一种可行做法是补充 state estimator，或开展训练/部署观测一致性实验，再用结果判断感知与 actor 参数化各自的影响。
+Observation modality 应作为所有方法族的横切变量单独记录。视觉、proprioception、tactile、privileged simulator state 应分别记录 actor 与 critic 的输入。
 
-已核验的视觉证据有明确范围。[dextreme-2022](bibliography.md#dextreme-2022) 比较 vision policy 与 privileged motion-capture state，[visual-dexterity-2022](bibliography.md#visual-dexterity-2022) 使用单 depth camera，[demostart-2024](bibliography.md#demostart-2024) 使用多相机 raw pixels 和 proprioception；后续核查应分别记录它们的 actor/critic privileged split、history 长度与端到端延迟。
+若 actor 在训练时可直接访问部署阶段无法获得的物体状态，一种可行做法是补充 state estimator，或开展训练/部署观测一致性实验，再用结果判断感知与 actor 参数化各自的影响。
+
+目前核验到三种视觉配置。[dextreme-2022](bibliography.md#dextreme-2022) 比较 vision policy 与 privileged motion-capture state，[visual-dexterity-2022](bibliography.md#visual-dexterity-2022) 使用单 depth camera，[demostart-2024](bibliography.md#demostart-2024) 使用多相机 raw pixels 和 proprioception；后续核查应分别记录它们的 actor/critic privileged split、history 长度与端到端延迟。
 
 Tactile 可补充视觉难以推断的接触信号，完整可观测性还需结合 history、recurrence 与测量延迟评估。[rotate-touch-2023](bibliography.md#rotate-touch-2023) 的证据是 binary touch-only in-hand rotation 及新物体真机部署；后续评估应单独记录 history、recurrence 与测量延迟，传感器硬件选型则结合具体设备核查。
 
@@ -38,6 +46,14 @@ Bi-DexHands 的结果应区分单任务与 multi-task 设置。[bi-dexhands-2023
 
 比较 IsaacLab 任务时应固定版本与 registry ID，名字相近的任务需逐项核对配置。[isaac-lab-2023](bibliography.md#isaac-lab-2023) 的原文题名是 Orbit，固定版本的 registry ID 与任务用途见 [04](04-onpolicy-diffusion-interface.md#按诊断目的的任务验证)，当前环境配置以所选版本的官方文档为准。
 
-跨论文比较前，可以逐项填写 hand-only/arm-hand、动作语义、初始状态、物体泛化与 sim/real 五类条件：动作是 position target、delta target、velocity 还是 torque；物体是否已在手中；测试是新初姿、新实例还是新形状；指标是在仿真、zero-shot 真机还是在线真机训练取得。信息缺失的字段列入后续核查，并按论文或实测结果补全。
+跨论文比较前，可以逐项记录以下五类条件：
+
+- 任务形态：hand-only 或 arm-hand。
+- 动作语义：position target、delta target、velocity 或 torque。
+- 初始状态：物体是否已在手中，以及初始接触如何生成。
+- 物体泛化：测试使用新初姿、新实例还是新形状。
+- 评估环境：指标来自仿真、zero-shot 真机还是在线真机训练。
+
+信息缺失的字段列入后续核查，并按论文或实测结果补全。
 
 下一步应先选择数据与策略的组合路径，再选择 actor 参数化；对应 [02 方法选择](02-method-landscape.md) 与 [03 retargeting 到 policy](03-retargeting-to-policy.md)。

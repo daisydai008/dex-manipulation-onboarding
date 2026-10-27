@@ -189,7 +189,7 @@
 - 解决什么问题：在保持 policy-gradient 实现简洁的同时，允许同一批 on-policy 数据进行多 epoch minibatch 更新。
 - 方法与信号是什么：交替进行环境采样和 surrogate objective 优化，以 proximal 更新约束 policy change。
 - 验证到哪里及缺口：已覆盖证据：abstract 报告 simulated locomotion 与 Atari benchmark，并比较 sample complexity、simplicity 与 wall-time。后续核查：灵巧操作。
-- 对两类读者有什么用：【推测】两类读者都应把它作为 ratio、clip 与 update cadence 的共同基线，而不是把实现增强误归因于 policy class。
+- 对两类读者有什么用：【推测】两类读者都应把它作为 ratio、clip 与 update cadence 的共同基线，实现增强的收益则与 policy class 分开归因。
 - 主源：[arXiv v2](https://arxiv.org/abs/1707.06347v2)
 
 ## implementation-matters-2020
@@ -254,7 +254,7 @@
 - 解决什么问题：从少量仿真 demonstrations 和 sparse reward 学习三指手臂-手复杂操作，并实现 zero-shot sim-to-real。
 - 方法与信号是什么：demonstration-led auto-curriculum 配合 domain randomization，部署策略输入为多相机 raw pixels 与 proprioception。
 - 验证到哪里及缺口：已覆盖证据：abstract 报告相对真机 demonstrations 学习方法使用少 100 倍 demonstrations。后续核查：课程构造细节和动作语义。
-- 对两类读者有什么用：【推测】diffusion/on-policy 读者可把它作为 demo curriculum 而非 policy-class 改造，retargeting 读者可把 reference 起始状态转为 curriculum 候选。
+- 对两类读者有什么用：【推测】diffusion/on-policy 读者可把它作为 demo curriculum 的参照，并与 policy-class 改造分开评估；retargeting 读者可把 reference 起始状态转为 curriculum 候选。
 - 主源：[arXiv v2](https://arxiv.org/abs/2409.06613v2)
 
 ## leap-hand-2023
@@ -306,7 +306,7 @@
 - 解决什么问题：研究不依赖视觉时，touch-only observation 能否支持新物体 in-hand rotation。
 - 方法与信号是什么：在手掌、finger links 和 fingertips 上布置 dense binary force sensors，并在仿真中用 RL 训练。
 - 验证到哪里及缺口：已覆盖证据：abstract 报告真机直接部署并旋转训练未见物体。后续核查：延迟、history 与精确成功率。
-- 对两类读者有什么用：【推测】它要求 diffusion 与 retargeting 方法把 tactile modality 作为横切 observation 变量，而不是独立方法族。
+- 对两类读者有什么用：【推测】它要求 diffusion 与 retargeting 方法把 tactile modality 作为横切 observation 变量，与具体方法族分别记录。
 - 主源：[arXiv v4](https://arxiv.org/abs/2303.10880v4)
 
 ## openteach-2024

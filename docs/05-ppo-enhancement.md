@@ -1,8 +1,8 @@
 # 05 面向 retargeting 的 PPO 增强
 
-> 本章回答：选定方向后，PPO 的哪个环节该增强、怎么隔离出真实收益而非实现差异。读完能针对具体失败信号选排查项、设计只改一个变量的隔离实验。对应路线：所有路线选定后的增强与诊断阶段。
+> 本章回答：选定方向后，PPO 的哪个环节该增强，以及怎么区分真实收益与实现差异。读完能针对具体失败信号选排查项、设计只改一个变量的隔离实验。对应路线：所有路线选定后的增强与诊断阶段。
 
-PPO 增强应按修改位置分成 update/estimation、demonstration/residual 集成、并行训练与课程三层，而不是把新 actor、数据来源和环境吞吐混为一种算法进步。[ppo-2017](bibliography.md#ppo-2017)、[implementation-matters-2020](bibliography.md#implementation-matters-2020) 与 [on-policy-actor-critic-2020](bibliography.md#on-policy-actor-critic-2020) 的 abstract 分别支持多 epoch surrogate update、code-level optimization 的影响和系统化设计选择评估。
+PPO 增强应按修改位置分成 update/estimation、demonstration/residual 集成、并行训练与课程三层；新 actor、数据来源和环境吞吐分别评估，避免混为一种算法进步。[ppo-2017](bibliography.md#ppo-2017)、[implementation-matters-2020](bibliography.md#implementation-matters-2020) 与 [on-policy-actor-critic-2020](bibliography.md#on-policy-actor-critic-2020) 的 abstract 分别支持多 epoch surrogate update、code-level optimization 的影响和系统化设计选择评估。
 
 本章的所有 REGRIND 插入点都是适配假设，不是源码审计或训练结果。REGRIND 项目的 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练只是接口背景；每个方向均列 baseline 问题、数据/信号、改动接口、证据层级与隔离评估，并用【推测】标注超出 abstract 的实现建议。
 
@@ -22,7 +22,7 @@ PPO 增强应按修改位置分成 update/estimation、demonstration/residual �
 
 Baseline 问题是同名 PPO 实现可能在 normalization、optimizer 与 rollout 处理上不同，导致增强收益无法归因。【论文直接验证】[implementation-matters-2020](bibliography.md#implementation-matters-2020) 的 abstract 指出 code-level optimization 解释其研究中 PPO 相对 TRPO 的多数回报提升；[on-policy-actor-critic-2020](bibliography.md#on-policy-actor-critic-2020) 研究 50+ choices，但本导读不据 abstract 指定某个 hyperparameter 必然最优。
 
-【机制相关】【推测】所需信号是 rollout 的 reward、done/truncation、value estimate、old log-prob、advantage 与 normalization statistics；改动接口是 estimator、surrogate loss 和 optimizer。面向 REGRIND 的适配假设是先检查 time-limit bootstrapping、advantage normalization、value scale、minibatch/epoch、gradient clipping 与 KL/clip fraction 记录，而不是先改 retargeting objective；这些具体审计项是根据上述实现归因问题提出的检查清单，不是论文 abstract 的逐项结论。
+【机制相关】【推测】所需信号是 rollout 的 reward、done/truncation、value estimate、old log-prob、advantage 与 normalization statistics；改动接口是 estimator、surrogate loss 和 optimizer。面向 REGRIND 的适配假设是先检查 time-limit bootstrapping、advantage normalization、value scale、minibatch/epoch、gradient clipping 与 KL/clip fraction 记录，把 retargeting objective 的调整放在这些检查之后；这些具体审计项是根据上述实现归因问题提出的检查清单，不是论文 abstract 的逐项结论。
 
 隔离评估可以保持 actor、reward、reference、reset 和 environment steps 一致，每次只改变一个实现因素。分别报告多个固定 seed 的 task success、reference error、掉落率、KL/clip fraction、value error 与 wall-clock，先在固定动作接口上确认稳定性，再考虑下层候选；该方案以 [ppo-2017](bibliography.md#ppo-2017) 及两篇 implementation study 为依据，具体 dexterous 收益由实验结果判定。
 
@@ -90,13 +90,13 @@ Baseline 问题是增加环境数量可能改变每次更新的时序长度、�
 
 Baseline 问题是仿真视觉或动力学分布过窄会使部署性能不稳定，但两类 randomization 的证据来源不同。【论文直接验证】[domain-randomization-2017](bibliography.md#domain-randomization-2017) 的 abstract 直接验证 rendering randomization 与 object localization；[openai-rubiks-2019](bibliography.md#openai-rubiks-2019) 则验证 ADR、memory-augmented control 和复杂真机操作，不能把前者直接称为 contact dynamics randomization 验证。
 
-【机制相关】【推测】所需信号是待随机化参数、success/failure 与部署估计误差，改动接口是 environment parameter sampler、curriculum scheduler 和 evaluation distribution。面向 REGRIND 的适配假设是将相机/感知、摩擦/质量、actuation/delay 分开 randomize；具体范围需由硬件与仿真误差给出，而不是从别的系统抄取。
+【机制相关】【推测】所需信号是待随机化参数、success/failure 与部署估计误差，改动接口是 environment parameter sampler、curriculum scheduler 和 evaluation distribution。面向 REGRIND 的适配假设是将相机/感知、摩擦/质量、actuation/delay 分开 randomize；具体范围需由硬件与仿真误差给出，其他系统的参数仅作参考。
 
 隔离评估可以比较无 randomization、固定范围和 adaptive range，并冻结测试分布。单独记录各 perturbation family 的性能、平均值与最差条件，以及 privileged state 到部署观测的差异；REGRIND 的 memory/adaptation 应单独验证，并以 [openai-rubiks-2019](bibliography.md#openai-rubiks-2019) 的 ADR 结果作为参照。
 
 ### 多任务并行与 reference 课程
 
-Baseline 问题是多任务数据可能竞争 shared capacity，而不是把单任务环境直接并排即可获得多技能。【论文直接验证】[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 的 abstract 报告多数 multi-task/few-shot 设置失败；[demostart-2024](bibliography.md#demostart-2024) 的课程结果不改变该 multi-task 限制。
+Baseline 问题是多任务数据可能竞争 shared capacity；单任务环境的简单并排只提供数据并行，多技能学习还需显式的任务分配与评估。【论文直接验证】[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 的 abstract 报告多数 multi-task/few-shot 设置失败；[demostart-2024](bibliography.md#demostart-2024) 的课程结果不改变该 multi-task 限制。
 
 【机制相关】【推测】所需信号是 task/reference ID、各任务成功率、reset 难度和采样比例；改动接口是 task-conditioned observation、reset scheduler 与 sampling weights。面向 REGRIND 的适配假设是先在单 reference 证明闭环可行，再逐步扩展物体/轨迹，避免在算法与任务分布同时改变时声称增强有效。
 
@@ -106,4 +106,4 @@ Baseline 问题是多任务数据可能竞争 shared capacity，而不是把单�
 
 【机制相关】【推测】选型顺序应先确认 baseline 的观测、动作与 update 记录正确，再按瓶颈选择一个方向。成功示范足够时优先比较 imitation 初始化，几何 reference 可用但动力学偏差明显时比较 residual，探索覆盖不足时比较 reset curriculum，吞吐扩展饱和时比较 aggregation；只有在共同数据和 update 口径固定后，才把 [dppo-2024](bibliography.md#dppo-2024) 或 [04](04-onpolicy-diffusion-interface.md#概率对象) 中满足条件的模型作为 actor 候选。这是基于上述证据的条件选择，不是优劣排名。
 
-每次实验都可以预先写明停止条件和复核节点。若原始 action/log-prob 不一致、reference reset 物理不可行、部署观测不可得或 compute budget 不支持目标控制周期，应先修复接口；若改善只出现在训练 reward 而非固定测试 task success，则保留负结果并记录预算消耗。该评估原则呼应 [implementation-matters-2020](bibliography.md#implementation-matters-2020) 的归因问题，具体实验以各章接口约定为准。
+每次实验都可以预先写明停止条件和复核节点。若原始 action/log-prob 不一致、reference reset 物理不可行、部署观测不可得或 compute budget 不支持目标控制周期，应先修复接口；若训练 reward 与固定测试 task success 的变化不一致，则保留负结果并记录预算消耗。该评估原则呼应 [implementation-matters-2020](bibliography.md#implementation-matters-2020) 的归因问题，具体实验以各章接口约定为准。

@@ -6,7 +6,7 @@
 
 ## 任务契约
 
-【机制相关】首个实验应固定任务契约，而不是只给一个 benchmark 名称。按 [01](01-problem-structure.md#任务谱系) 写明 in-hand、grasp acquisition、arm-hand、双手或 long-horizon 的目标，定义 success、掉落、超时和恢复行为，记录初始接触状态、测试物体与部署初始分布；未明确这些条件时，不比较论文回报数字。
+【机制相关】首个实验应固定任务契约，把 benchmark 名称展开为可复现的任务定义。按 [01](01-problem-structure.md#任务谱系) 写明 in-hand、grasp acquisition、arm-hand、双手或 long-horizon 的目标，定义 success、掉落、超时和恢复行为，记录初始接触状态、测试物体与部署初始分布；未明确这些条件时，不比较论文回报数字。
 
 【机制相关】【需新证据】观测与动作契约应横贯所有方法族。分别记录 actor/critic 的 privileged state、视觉、proprioception、tactile、history/recurrence、采样时间与 delay，未知项列入后续核查；动作要明确 target/delta/velocity/torque、control rate、action chunk 与执行 mapping。若部署阶段缺少训练时使用的输入，应先修复感知或接口；随后再用对照实验判断 actor 容量是否影响任务表现，避免把感知缺口误当成容量问题。证据范围见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
 
@@ -20,9 +20,9 @@
 
 【机制相关】【需新证据】update 异常先排查概率与估计接口。若 KL/clip fraction 在更新后突变，检查同一 action 的 old/new log-prob、advantage、normalization 与 done/truncation；这些确认一致后才分别改变 LR、epoch 或 clip，不能先归因于探索不够。[implementation-matters-2020](bibliography.md#implementation-matters-2020) 支持实现归因的重要性，具体排查顺序是 [05 selector](05-ppo-enhancement.md#从失败信号选择接口) 的候选设计。
 
-【机制相关】【需新证据】几何贴合但物体滑落，优先定位接触与控制问题。按 phase 记录 reference error、object motion、接触失败、base-only 成功与 residual 饱和，检查 reference/base/feasible reset，而不是立即替换 actor；若早期失败导致后续 phase 几乎无采样，再单独评估 phase resets/curriculum，并始终用固定部署初始状态报告 end-to-end success，见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
+【机制相关】【需新证据】几何贴合但物体滑落，优先定位接触与控制问题。按 phase 记录 reference error、object motion、接触失败、base-only 成功与 residual 饱和，先检查 reference/base/feasible reset，再决定是否替换 actor；若早期失败导致后续 phase 几乎无采样，再单独评估 phase resets/curriculum，并始终用固定部署初始状态报告 end-to-end success，见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
 
-【需新证据】只有在数据与更新口径一致之后，才能把动作表示不足列为候选解释。观察相同条件下的成功动作是否存在多种模式、imitation 的闭环恢复是否失败，以及 Gaussian baseline 的问题是否仍存在；多模态数据本身不能证明 diffusion 会提高 task success。若主要耗时在 simulator 而非 actor/update，先测吞吐分段而不是换生成模型；实验拆分见 [05](05-ppo-enhancement.md)。
+【需新证据】只有在数据与更新口径一致之后，才能把动作表示不足列为候选解释。观察相同条件下的成功动作是否存在多种模式、imitation 的闭环恢复是否失败，以及 Gaussian baseline 的问题是否仍存在；多模态数据本身不能证明 diffusion 会提高 task success。若主要耗时在 simulator，先分段测量 simulator 与 actor/update 的耗时，再决定是否更换生成模型；实验拆分见 [05](05-ppo-enhancement.md)。
 
 ## 候选选择：五个方法族
 
@@ -52,7 +52,7 @@
 
 - 解决的瓶颈：【机制相关】有可利用的人类运动或任务结构，但缺少同 embodiment 的动作监督。
 - 前置条件：可获取的场景/运动线索、跨 embodiment 对齐，以及后续 robot 执行验证；有 robot demonstrations 时应另行记录其使用量。
-- 收益预期：【需新证据】提供 reference 或高层任务引导，而不是把人类视频直接等同 expert robot action。
+- 收益预期：【需新证据】提供 reference 或高层任务引导，expert robot action 则由真实执行记录提供。
 - 代价：姿态/物体估计、时间对齐、遮挡处理及接触可行性校验。
 - 证据范围：[robotic-telekinesis-2022](bibliography.md#robotic-telekinesis-2022) 的 abstract 支持机器人手 imitation，[mimicplay-2023](bibliography.md#mimicplay-2023) 支持 human play 与少量 robot demonstrations 的组合；两者不证明任意 retargeted trajectory 都能用于 BC。
 - 不适用情形：任务需要精确接触动作而记录无法恢复物体/接触状态，或无法验证生成 reference 的动力学可行性。
@@ -84,7 +84,7 @@
 
 【机制相关】【需新证据】有成功 robot demonstrations 时，先验证 imitation 闭环，再决定 reward fine-tuning。先统一数据与部署动作、评估固定 reset 的 success 和偏离示范后的恢复；若 imitation 已满足任务，不因存在 RL 方法而追加复杂度。需要 fine-tuning 时再按 [dppo-2024](bibliography.md#dppo-2024) 的证据范围评估，不把其结果外推为灵巧手保证。
 
-【机制相关】【需新证据】有 reference/base controller 时，先验证物理可行性与 base-only，再测 Gaussian residual，最后考虑换 actor。按 [03](03-retargeting-to-policy.md) 区分 BC、tracking 与 reset 用途，固定 controller/reference 的版本与 residual scale；若 base-only 已失稳或 reference 不可行，先修复这些接口，而不是用更复杂 actor 掩盖原因。该顺序借鉴 [residual-rl-2018](bibliography.md#residual-rl-2018) 的控制分工，目标任务收益尚待验证。
+【机制相关】【需新证据】有 reference/base controller 时，先验证物理可行性与 base-only，再测 Gaussian residual，最后考虑换 actor。按 [03](03-retargeting-to-policy.md) 区分 BC、tracking 与 reset 用途，固定 controller/reference 的版本与 residual scale；若 base-only 已失稳或 reference 不可行，先修复这些接口，再用对照实验评估更复杂 actor 的作用。该顺序借鉴 [residual-rl-2018](bibliography.md#residual-rl-2018) 的控制分工，目标任务收益尚待验证。
 
 ## 首个实验与停止条件
 
