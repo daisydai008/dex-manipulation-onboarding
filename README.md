@@ -111,5 +111,6 @@ Diffusion 也可把生成目标限定为抓取候选。[DexDiffuser](docs/biblio
 - [04 On-policy diffusion 接口](docs/04-onpolicy-diffusion-interface.md)：准备实现路线 1、2，或核对 residual 的概率与执行记录时读。
 - [05 PPO 增强](docs/05-ppo-enhancement.md)：已有训练结果，需要定位失败原因或设计隔离实验时读。
 - [06 Diffusion 历史](docs/06-diffusion-history.md)：需要进一步区分 imitation、offline RL 与 on-policy 方法时读。
-- [REGRIND 对接思路](docs/regrind-integration.md)：需要把生成式策略用于 REGRIND 的 reference、residual 或部署扰动试验时读；文末附仓库维护检查。
+- [REGRIND 对接思路](docs/regrind-integration.md)：需要把生成式策略用于 REGRIND 的 reference、residual 或部署扰动试验时读。
+- [仓库检查与维护](scripts/README.md)：需要运行结构、链接与来源检查时读。
 - [注释书目](docs/bibliography.md)：需要查某篇论文解决的问题、所做实验与原文来源时读。

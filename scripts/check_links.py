@@ -26,7 +26,7 @@ FILES = {
     "docs/02-method-landscape.md", "docs/03-retargeting-to-policy.md",
     "docs/04-onpolicy-diffusion-interface.md", "docs/05-ppo-enhancement.md",
     "docs/bibliography.md", "docs/06-diffusion-history.md",
-    "docs/regrind-integration.md", "scripts/check_links.py",
+    "docs/regrind-integration.md", "scripts/check_links.py", "scripts/README.md",
 }
 EXPECTED_FILES = len(FILES)
 # CO-1 批准身份：稳定 paper ID -> 所据版本、tier；标题/年份勘误不改变身份。

@@ -4,7 +4,7 @@
 
 ## 背景
 
-REGRIND 的项目背景是 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练：先把人类运动转换成机器人参考轨迹，再通过交互学习修正执行中的偏差。这一描述沿用 [03 的项目背景](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)，不是对当前源码或部署状态的审计。
+REGRIND 的项目背景是 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练：先把人类运动转换成机器人参考轨迹，再通过交互学习修正执行中的偏差。这一描述沿用 [03 的项目背景](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)，当前源码与部署状态需另行核查。
 
 参考轨迹贴合人类动作后，还需通过接触稳定性实验验证机器人执行能力。生成式策略可以用于学习控制修正量、生成连续多步动作，也可以作为训练扰动的候选模型；以下分别说明已有论文验证了什么，以及 REGRIND 仍需进行什么试验。本章只讨论方法接口，不含硬件选型、排期与分工，那些在 REGRIND 侧文档。
 
@@ -12,7 +12,7 @@ REGRIND 的项目背景是 Drake 位置级 retargeting、residual RL 与 Isaac �
 
 ### 位置级 reference 之后的 residual
 
-Residual RL 用已有 controller 处理可建模的控制部分，再让 RL 学习修正量。[Residual RL](bibliography.md#residual-rl-2018) 在真机 block assembly 中验证了这种控制叠加；[MoDex](bibliography.md#modex-2026) 则提供 diffusion policy 经 DPPO fine-tuning 后 zero-shot 部署到 Allegro 的参照，但它的顺序抓取实验在本书目中未记录为 residual 控制，也不是在真机上在线训练。
+Residual RL 用已有 controller 处理可建模的控制部分，再让 RL 学习修正量。[Residual RL](bibliography.md#residual-rl-2018) 在真机 block assembly 中验证了这种控制叠加；[MoDex](bibliography.md#modex-2026) 则提供 diffusion policy 经 DPPO fine-tuning 后 zero-shot 部署到 Allegro 的参照；其任务范围为顺序抓取，residual 控制与真机在线训练需另行验证。
 
 一种可行做法是保留 reference 与 base controller，让生成式 actor 只输出 residual。试验应先记录 base-only 和 Gaussian residual 的结果，再比较生成式 residual，保持 reference、residual scale、执行限制和测试初始状态一致；同时记录任务成功率、修正幅度与饱和率，区分 reference 不可执行与 residual 控制不足。
 
@@ -24,24 +24,12 @@ Action chunk 是一次预测的一段连续动作，执行其中若干步后再�
 
 ### 部署噪声模型标定的扰动生成
 
-部署论文提供了研究数据变化与机器人形态变化的参照；生成式噪声模型需要单独标定和验证。[DexVLA](bibliography.md#dexvla-2025) 研究跨形态的 diffusion action expert，[DexWild](bibliography.md#dexwild-2025) 研究人手与机器人数据联合训练及环境泛化；本书目所记录的两篇证据都不能支持“用 diffusion 生成部署扰动已经有效”的结论。
+部署论文提供了研究数据变化与机器人形态变化的参照；生成式噪声模型需要单独标定和验证。[DexVLA](bibliography.md#dexvla-2025) 研究跨形态的 diffusion action expert，[DexWild](bibliography.md#dexwild-2025) 研究人手与机器人数据联合训练及环境泛化。
 
 此接口可先用同步记录标定部署观测误差，再比较经验噪声采样与生成式扰动模型。这属于训练数据或环境侧的改动，控制 actor 保持不变；试验应固定 policy、reference 和测试分布，检查扰动的时间相关性、取值范围与闭环成功率。生成样本的适用范围由实测误差数据决定。
 
 ## 接口的概率与记录约定
 
-执行命令与 policy 采样变量需要分别保存。Residual 相加、幅度缩放与 clipping 后的 command 不能替代 PPO ratio 使用的原始变量；固定 controller 时的条件见 [04 固定执行 mapping](04-onpolicy-diffusion-interface.md#固定执行-mapping)，DPPO 与可逆模型各自需要的记录见 [04 Rollout 记录](04-onpolicy-diffusion-interface.md#rollout-记录)。
+执行命令与 policy 采样变量需要分别保存。PPO ratio 使用原始采样变量，Residual 相加、幅度缩放与 clipping 后的 command 单独保存用于执行核对；固定 controller 时的条件见 [04 固定执行 mapping](04-onpolicy-diffusion-interface.md#固定执行-mapping)，DPPO 与可逆模型各自需要的记录见 [04 Rollout 记录](04-onpolicy-diffusion-interface.md#rollout-记录)。
 
 Reference 的数据检查应先于 actor 比较。坐标系、joint order、时间戳、物体状态和实际执行动作的记录见 [03 链条与数据契约](03-retargeting-to-policy.md#链条与数据契约)，接触与 controller 可执行性检查见 [03 接触可行性与动力学鸿沟](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
-
-## 检查与接受范围
-
-检查器只用 Python 标准库，不写 cache、日志或 fixture。交付文件清单显式登记在 `scripts/check_links.py` 的 `FILES` 集合，新文件须登记加入，编辑器与运行时辅助文件（如 `.vscode/`、`.pi-subagents/`、`.gitignore`）不属于交付树，运行检查前须从树中删除，本地忽略规则放全局 gitignore 或 `.git/info/exclude`。`--lint` 不联网，按内嵌身份映射锚定原有 36 篇 core/extended 身份，新增条目经登记与 arXiv 核验后接受（当前 43 条、19 core、24 extended）；完整模式核验记录版本的 arXiv API title/ID、书目外链、全部交付 Markdown 中的官方工程文档链接与内部 anchor。网络请求单次 15 秒、至多重试 2 次、同 host 间隔至少 1 秒、总联网预算 15 分钟；退出码为 0 全部通过、2 内容失败、3 网络未完成，内容失败优先，只有 failed=0 且 unverified=0 才通过。
-
-```bash
-python3 scripts/check_links.py --self-test
-python3 scripts/check_links.py --lint
-python3 scripts/check_links.py
-```
-
-自动检查用于验证结构与链接，内容接受还需人工核对。条件推导、DPPO 机制与选型建议仍需人工核对；执行者交回与独立内容核验分开，不以链接可达代替技术判断。
