@@ -116,15 +116,14 @@ Diffusion 也可把生成目标限定为抓取候选。[DexDiffuser](docs/biblio
 - [仓库检查与维护](scripts/README.md)：需要运行结构、链接与来源检查时读。
 - [注释书目](docs/bibliography.md)：需要查某篇论文解决的问题、所做实验与原文来源时读。
 
-## 快速答案与参考论文
+## 快速答案：先看哪些实验论文
 
-如果只能先选一条路线：有成功 demonstrations 时，先用 Diffusion Policy 做 BC 预训练，再用 DPPO 在仿真中 fine-tune；没有 demonstrations 时，先建立 Gaussian PPO baseline，确认任务、奖励和观测是否可学，再决定是否引入 diffusion actor。
+如果只看有灵巧手实验的论文，先读 [MoDex](docs/bibliography.md#modex-2026)：它把 diffusion policy 的 BC 预训练、仿真 DPPO fine-tuning 和 Allegro 真机 zero-shot 部署连在一起，是最贴近 on-policy diffusion 落地的实验案例；其任务是顺序多物体抓取，in-hand 重定向可作为后续实验。
 
-按现有资源可以这样选择：
+按想了解的实验设置选择：
 
-- **已有可交互仿真**：先跑 Gaussian PPO，再考虑替换 actor。[PPO](docs/bibliography.md#ppo-2017) 提供 ratio 与更新基线，[Implementation Matters](docs/bibliography.md#implementation-matters-2020) 说明为什么要先固定实现细节，[DPPO](docs/bibliography.md#dppo-2024) 则提供 diffusion actor 的 on-policy 更新方式。
-- **已有成功 demonstrations**：先验证 imitation 闭环，再考虑 DPPO fine-tuning。[Diffusion Policy](docs/bibliography.md#diffusion-policy-2023) 提供条件动作生成，[DPPO](docs/bibliography.md#dppo-2024) 提供 denoising-step PPO，[MoDex](docs/bibliography.md#modex-2026) 展示 BC 预训练、仿真 DPPO fine-tune 和 Allegro 真机 zero-shot 部署的完整链条；其任务是顺序抓取，in-hand 重定向可作为后续实验。
-- **已有 retargeting 或 base controller**：优先评估 residual。[Residual RL](docs/bibliography.md#residual-rl-2018) 提供 base 与 RL 修正量的控制分工，[DeepMimic](docs/bibliography.md#deepmimic-2018) 提供 tracking、phase 与 RSI 参照，[DemoStart](docs/bibliography.md#demostart-2024) 提供 demonstration-led curriculum 与 reset 思路。
-- **希望采用 exact-inversion**：先验证 sampler 的可逆性、Jacobian 和数值稳定性，再与 DPPO 比较。[概率基础附录](docs/appendix-probability.md) 给出密度与 rollout 约定，[06 的 exact-inversion 教程](docs/06-diffusion-history.md#与-exact-inversion-的对照) 给出从 toy model 到简单任务的实现路线。
+- **In-hand RL 与 sim-to-real**：[Learning Dexterous In-Hand Manipulation](docs/bibliography.md#openai-inhand-2020) 在物理 Shadow Hand 上展示仿真训练到真机重定向；[DeXtreme](docs/bibliography.md#dextreme-2022) 在 Allegro 上比较 vision policy 与 privileged-state 参照；[Visual Dexterity](docs/bibliography.md#visual-dexterity-2022) 用单 depth camera 和 downward-facing hand 做新物体、复杂形状的重定向，并展示桌面支撑下的掉落恢复。
+- **Demonstration 与 retargeting**：[DAPG](docs/bibliography.md#dapg-2018) 在 24-DoF hand 上展示 demonstrations 降低 RL sample complexity；[DexCap](docs/bibliography.md#dexcap-2024) 展示 mocap、IK 与 point-cloud imitation 的数据到策略管线；[DemoStart](docs/bibliography.md#demostart-2024) 在三指手臂-手上展示少量仿真 demonstrations、sparse reward 与 auto-curriculum 的 zero-shot sim-to-real。
+- **Diffusion 在真机灵巧手上的部署**：[DexVLA](docs/bibliography.md#dexvla-2025) 展示 1B diffusion action expert 的跨形态学习与 gripper→dexterous hand 迁移；[DexWild](docs/bibliography.md#dexwild-2025) 在 LEAP Hand 上展示人手与机器人数据联合训练；[DexUMI](docs/bibliography.md#dexumi-2025) 在两种真机灵巧手平台上展示外骨骼与 diffusion policy；[DexCast](docs/bibliography.md#dexcast-2026) 展示人类视频到真机灵巧手闭环控制；[Human2Dex](docs/bibliography.md#human2dex-2026) 展示腕部视角示范跨手型学习；[SkillWeave](docs/bibliography.md#skillweave-2026) 展示 object-mask 条件 diffusion policy 的长时技能组合。除 MoDex 外，这些工作主要采用 imitation learning，可用于判断 diffusion actor 的部署条件与数据要求。
 
-更完整的方法脉络与部署证据见 [06](docs/06-diffusion-history.md)。
+这些论文的实验范围与原文链接集中在 [注释书目](docs/bibliography.md)；方法脉络见 [06](docs/06-diffusion-history.md)。
