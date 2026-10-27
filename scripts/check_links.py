@@ -213,9 +213,9 @@ def parse_entries(text):
         if entry.get("tier") not in ("core", "extended"):
             errors.append(f"{pid}: tier 无效")
         coverage = entry.get("验证到哪里及缺口", "")
-        coverage_match = re.fullmatch(r"已覆盖证据：(.*?)不支持的结论：(.*)", coverage)
+        coverage_match = re.fullmatch(r"已覆盖证据：(.*?)后续核查：(.*)", coverage)
         if not coverage_match or not all(part.strip() for part in coverage_match.groups()):
-            errors.append(f"{pid}: 验证字段必须显式包含非空的已覆盖证据/不支持的结论")
+            errors.append(f"{pid}: 验证字段必须显式包含非空的已覆盖证据/后续核查")
         version = entry.get("arxiv", "").split("v")[-1]
         evidence = entry.get("evidence", "")
         if not re.search(r"\bv" + re.escape(version) + r"\b", evidence):
@@ -627,7 +627,7 @@ def self_test():
     source = "[arXiv v2](https://arxiv.org/abs/2401.12345v2)"
     good = "## sample-2024\n" + "\n".join("- " + k + "：" + v for k, v in zip(FIELDS, (
         "sample-2024", "A Test Title", "Doe 等 2024", "2401.12345v2", "core", "v2 abstract", source,
-        "问题", "方法", "已覆盖证据：已测范围。 不支持的结论：未测迁移。", "用途")))
+        "问题", "方法", "已覆盖证据：已测范围。 后续核查：未测迁移。", "用途")))
     entries, errors = parse_entries(good)
     check(not errors, "valid entry")
     check(bool(parse_entries(good.replace("- 主源：" + source + "\n", ""))[1]), "missing primary source")
@@ -652,7 +652,7 @@ def self_test():
     check(any("重复作品" in e for e in parse_entries(good + "\n" + duplicate)[1]), "duplicate canonical work across versions")
     check(bool(parse_entries(good.replace("tier：core", "tier：other"))[1]), "invalid tier")
     check(bool(parse_entries(good.replace("解决什么问题", "问题是什么"))[1]), "exact four-question schema")
-    check(bool(parse_entries(good.replace("不支持的结论：未测迁移。", ""))[1]), "explicit unsupported conclusions required")
+    check(bool(parse_entries(good.replace("后续核查：未测迁移。", ""))[1]), "explicit unsupported conclusions required")
     check(bool(parse_entries(good.replace("已覆盖证据：已测范围。", "已覆盖证据：   "))[1]), "blank evidence coverage rejected")
     check(bool(parse_entries(good.replace("v2 abstract", "v20 abstract"))[1]), "evidence version boundary")
     atom = '<feed xmlns="http://www.w3.org/2005/Atom"><entry><id>https://arxiv.org/abs/2401.12345v2</id><title>A Test Title</title></entry></feed>'

@@ -8,13 +8,13 @@
 
 【机制相关】首个实验应固定任务契约，而不是只给一个 benchmark 名称。按 [01](01-problem-structure.md#任务谱系) 写明 in-hand、grasp acquisition、arm-hand、双手或 long-horizon 的目标，定义 success、掉落、超时和恢复行为，记录初始接触状态、测试物体与部署初始分布；未明确这些条件时，不比较论文回报数字。
 
-【机制相关】【需新证据】观测与动作契约应横贯所有方法族。分别记录 actor/critic 的 privileged state、视觉、proprioception、tactile、history/recurrence、采样时间与 delay，未知项记“未报告”；动作要明确 target/delta/velocity/torque、control rate、action chunk 与执行 mapping。若部署阶段缺少训练时使用的输入，应先修复感知或接口；随后再用对照实验判断 actor 容量是否影响任务表现，避免把感知缺口误当成容量问题。证据范围见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
+【机制相关】【需新证据】观测与动作契约应横贯所有方法族。分别记录 actor/critic 的 privileged state、视觉、proprioception、tactile、history/recurrence、采样时间与 delay，未知项列入后续核查；动作要明确 target/delta/velocity/torque、control rate、action chunk 与执行 mapping。若部署阶段缺少训练时使用的输入，应先修复感知或接口；随后再用对照实验判断 actor 容量是否影响任务表现，避免把感知缺口误当成容量问题。证据范围见 [01 观测](01-problem-structure.md#观测与部分可观测性)。
 
 ## 资源盘点
 
 【机制相关】资源盘点的产出是可用清单与缺口清单。检查 simulator/reward/reset 是否可复现，成功 robot demonstrations 是否含同步观测和真实动作，reference 是否有可重建的 joint/object state，base controller 是否可独立闭环；数据是否成功不能由 retargeting 几何误差判断，依据与检查项见 [03](03-retargeting-to-policy.md#链条与数据契约)。
 
-【需新证据】训练资源与部署约束应分别记录。列出可用 environment interactions、wall-clock、显存、推理 latency 和允许的控制周期；人类视频只有运动线索、不等于 robot action labels，simulator 吞吐也不等于真机采样能力。先保留这些限制，再选择采集、imitation、RL 或组合路线，不从方法名称补全缺失资源。
+【需新证据】训练资源与部署约束应分别记录。列出可用 environment interactions、wall-clock、显存、推理 latency 和允许的控制周期；人类视频提供运动线索，robot action labels 需通过 retargeting 与执行记录获得，真机采样能力则按实际采集周期与延迟单独测量。先保留这些限制，再选择采集、imitation、RL 或组合路线，不从方法名称补全缺失资源。
 
 ## 瓶颈诊断：由可观察信号驱动
 

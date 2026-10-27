@@ -24,7 +24,7 @@ Baseline 问题是同名 PPO 实现可能在 normalization、optimizer 与 rollo
 
 【机制相关】【推测】所需信号是 rollout 的 reward、done/truncation、value estimate、old log-prob、advantage 与 normalization statistics；改动接口是 estimator、surrogate loss 和 optimizer。面向 REGRIND 的适配假设是先检查 time-limit bootstrapping、advantage normalization、value scale、minibatch/epoch、gradient clipping 与 KL/clip fraction 记录，而不是先改 retargeting objective；这些具体审计项是根据上述实现归因问题提出的检查清单，不是论文 abstract 的逐项结论。
 
-【需新证据】【推测】隔离评估应保持 actor、reward、reference、reset 和 environment steps 一致，每次只改变一个实现因素。分别报告多个固定 seed 的 task success、reference error、掉落率、KL/clip fraction、value error 与 wall-clock，先在固定动作接口上确认稳定性，再考虑下层候选；来源与证据上限仍是 [ppo-2017](bibliography.md#ppo-2017) 及两篇 implementation study，不把该方案写成已验证的 dexterous 配方。
+隔离评估可以保持 actor、reward、reference、reset 和 environment steps 一致，每次只改变一个实现因素。分别报告多个固定 seed 的 task success、reference error、掉落率、KL/clip fraction、value error 与 wall-clock，先在固定动作接口上确认稳定性，再考虑下层候选；该方案以 [ppo-2017](bibliography.md#ppo-2017) 及两篇 implementation study 为依据，具体 dexterous 收益由实验结果判定。
 
 ### 更换 actor 与 likelihood 对象
 
@@ -42,7 +42,7 @@ Baseline 问题是 sparse success 或高维接触探索导致从零学习成本�
 
 【机制相关】【推测】所需数据是 observation/action 一致的 robot demonstrations，改动接口是 BC initialization 或辅助 imitation loss。面向 REGRIND 的适配假设是先用经过动力学校验的 retargeted trajectory，再比较初始化与持续 imitation regularization；reference 不能直接被当作已成功的 expert action，数据前置条件见 [03](03-retargeting-to-policy.md#用途一bc-数据)。
 
-【需新证据】【推测】隔离评估应比较无示范、只初始化、持续辅助损失三种设置，固定 demonstration 数量、质量与 interaction budget。记录初始成功率、后续提升、偏离 reference 后恢复能力和 demo-overfitting；该比较沿用 [dapg-2018](bibliography.md#dapg-2018) 的 demonstration 思路，PPO 与 REGRIND 的收益由实验结果判定。
+隔离评估可以比较无示范、只初始化、持续辅助损失三种设置，固定 demonstration 数量、质量与 interaction budget。记录初始成功率、后续提升、偏离 reference 后恢复能力和 demo-overfitting；该比较沿用 [dapg-2018](bibliography.md#dapg-2018) 的 demonstration 思路，PPO 与 REGRIND 的收益由实验结果判定。
 
 ### Base controller 与 residual
 
@@ -50,7 +50,7 @@ Baseline 问题是位置级 reference 的几何匹配不能消除真实接触与
 
 【机制相关】【推测】所需信号是 base command、policy 原始动作、执行后 command、tracking error、object state 与接触反馈；改动接口是 action composition 和 reward attribution。面向 REGRIND 的适配假设是冻结 base mapping 与 residual scale 后再训练 residual；对 auxiliary actor 必须保留 policy action，不能用 clipped actuator command 替代 ratio 中的随机变量，理由见 [04](04-onpolicy-diffusion-interface.md#固定执行-mapping)。
 
-【需新证据】【推测】隔离评估应比较 base-only、同 reference 的 Gaussian residual、直接控制以及候选 diffusion residual。记录 task success、residual magnitude、饱和比例、接触失败与外推 reference 上的稳定性，且单独测 base controller 变更；[residual-rl-2018](bibliography.md#residual-rl-2018) 只支持该分工的机制相关性，不保证所有不可行 reference 都能由 residual 修复。
+隔离评估可以比较 base-only、同 reference 的 Gaussian residual、直接控制以及候选 diffusion residual。记录 task success、residual magnitude、饱和比例、接触失败与外推 reference 上的稳定性，且单独测 base controller 变更；[residual-rl-2018](bibliography.md#residual-rl-2018) 提供控制分工的参照，不可行 reference 的修复则先检查 reference 与 base controller。
 
 ### Tracking、RSI 与 demonstration-led reset
 
@@ -58,15 +58,15 @@ Baseline 问题是长 reference 的早期失败使后续 phase 缺少训练样�
 
 【机制相关】【推测】所需数据是 phase-aligned reference、可恢复的 joint/object state 与成功信号；改动接口分别是 reference observation、tracking reward 和 reset sampler。面向 REGRIND 的适配假设是将 RSI 作为“从 reference 不同阶段初始化”的候选思想，不宣称已核验 DeepMimic 的 RSI 细节；reference state 的接触一致性检查与 [03](03-retargeting-to-policy.md#用途二tracking-reference-与-rsi) 一致。
 
-【需新证据】【推测】隔离评估应固定 actor，分别改变 tracking reward 和 reset distribution。只有二者单独消融后，才把结果归因于对应接口；若同时加入二者，报告应标为组合方案。对固定部署初始状态报告 end-to-end success，同时报告各 phase 的条件成功率、reset 可行率和 reference error，避免把 [demostart-2024](bibliography.md#demostart-2024) 的课程启发误写为已解决长时手部接触。
+隔离评估可以固定 actor，分别改变 tracking reward 和 reset distribution。只有二者单独消融后，才把结果归因于对应接口；若同时加入二者，报告应标为组合方案。对固定部署初始状态报告 end-to-end success，同时报告各 phase 的条件成功率、reset 可行率和 reference error；[demostart-2024](bibliography.md#demostart-2024) 的课程启发用于设计实验，长时手部接触的效果由这些指标判定。
 
 ### Split-and-aggregate 数据聚合
 
 Baseline 问题是并行数据增加后 PPO 性能饱和，不是示范不足。【论文直接验证】[sapg-2024](bibliography.md#sapg-2024) 的 abstract 提出拆分环境 chunks 再以 importance sampling 聚合；本节因其涉及多来源 rollout 集成而讨论它，但 SAPG 本身不是 demonstration 或 residual 方法。
 
-【机制相关】【推测】所需信号是各采样 policy 的 likelihood、trajectory 来源和对应 advantage；改动接口是 rollout partition、behavior-policy bookkeeping 与 importance weighting。面向 REGRIND 的适配假设是先在同一任务/同一 residual actor 下验证聚合，再考虑不同 reference phase 的数据；abstract 未报告跨 phase 混合或 auxiliary-action actor 集成，这些不能作为现成算法选项宣称。
+【机制相关】【推测】所需信号是各采样 policy 的 likelihood、trajectory 来源和对应 advantage；改动接口是 rollout partition、behavior-policy bookkeeping 与 importance weighting。面向 REGRIND 的适配假设是先在同一任务/同一 residual actor 下验证聚合，再考虑不同 reference phase 的数据；跨 phase 混合或 auxiliary-action actor 集成可作为新的实验假设，先在小规模对照中验证。
 
-【需新证据】【推测】隔离评估应固定总环境数量、总 samples 和网络容量，对比 vanilla PPO 与 SAPG-style aggregation，另扫并行规模。记录 importance-weight 分布、有效样本量、回报、GPU 时间和内存；候选是否适合 REGRIND 取决于实测瓶颈，不能从 [sapg-2024](bibliography.md#sapg-2024) 的其他环境结果推断手部收益。
+隔离评估可以固定总环境数量、总 samples 和网络容量，对比 vanilla PPO 与 SAPG-style aggregation，另扫并行规模。记录 importance-weight 分布、有效样本量、回报、GPU 时间和内存；SAPG-style aggregation 是否适合 REGRIND 取决于实测瓶颈，[sapg-2024](bibliography.md#sapg-2024) 的结果用于确定实验假设与测量项。
 
 ### Multi-agent 条件性参照
 
@@ -74,7 +74,7 @@ Baseline 问题只有在明确存在多个 cooperative agents、各自 observati
 
 【机制相关】【推测】所需信号是每个 agent 的 local observation/action、shared reward 和可用的 joint training information；改动接口是 policy/critic organization。面向 REGRIND 的适配假设仅在先批准 multi-agent 建模后成立；单 actor residual 不是 MAPPO 的应用理由，不建议为采用方法而强行拆指。
 
-【需新证据】【推测】隔离评估应在相同任务、总参数量与观测权限下比较 single-agent 和已明确分工的 multi-agent 设置。记录 coordination failure 与 sample efficiency；若部署仍只有单 actor，则将 [mappo-2021](bibliography.md#mappo-2021) 保留为条件性阅读而不进入实现计划。
+隔离评估可以在相同任务、总参数量与观测权限下比较 single-agent 和已明确分工的 multi-agent 设置。记录 coordination failure 与 sample efficiency；若部署仍只有单 actor，则将 [mappo-2021](bibliography.md#mappo-2021) 保留为条件性阅读，multi-agent 实现则以明确的 observation/action partition 为前提。
 
 ## 并行训练与课程层
 
@@ -84,7 +84,7 @@ Baseline 问题是增加环境数量可能改变每次更新的时序长度、�
 
 【机制相关】【推测】所需信号是 environment steps/s、simulation/actor/update 分段耗时、rollout length 与显存占用；改动接口是 environment batching、rollout collection 与 minibatch schedule。面向 REGRIND 的适配假设是先测接触仿真、actor inference 或优化器哪一项主导耗时，再调整并行数，而不只以 GPU utilization 作为目标。
 
-【需新证据】【推测】隔离评估应同时进行固定 total samples 的并行规模实验和固定 wall-clock 的效率实验。保持 reference/reset、task distribution 与 actor 不变，记录 task success、吞吐和时序 credit assignment 的变化；该设计借鉴 [massively-parallel-2021](bibliography.md#massively-parallel-2021) 的并行与课程机制，吞吐和课程收益分别报告。
+隔离评估可以同时进行固定 total samples 的并行规模实验和固定 wall-clock 的效率实验。保持 reference/reset、task distribution 与 actor 不变，记录 task success、吞吐和时序 credit assignment 的变化；该设计借鉴 [massively-parallel-2021](bibliography.md#massively-parallel-2021) 的并行与课程机制，吞吐和课程收益分别报告。
 
 ### Domain randomization 与 ADR
 
@@ -92,7 +92,7 @@ Baseline 问题是仿真视觉或动力学分布过窄会使部署性能不稳�
 
 【机制相关】【推测】所需信号是待随机化参数、success/failure 与部署估计误差，改动接口是 environment parameter sampler、curriculum scheduler 和 evaluation distribution。面向 REGRIND 的适配假设是将相机/感知、摩擦/质量、actuation/delay 分开 randomize；具体范围需由硬件与仿真误差给出，而不是从别的系统抄取。
 
-【需新证据】【推测】隔离评估应比较无 randomization、固定范围和 adaptive range，并冻结测试分布。单独记录各 perturbation family 的性能、平均值与最差条件，以及 privileged state 到部署观测的差异；[openai-rubiks-2019](bibliography.md#openai-rubiks-2019) 的 ADR 结果不等于 REGRIND 已具备同样 memory/adaptation。
+隔离评估可以比较无 randomization、固定范围和 adaptive range，并冻结测试分布。单独记录各 perturbation family 的性能、平均值与最差条件，以及 privileged state 到部署观测的差异；REGRIND 的 memory/adaptation 应单独验证，并以 [openai-rubiks-2019](bibliography.md#openai-rubiks-2019) 的 ADR 结果作为参照。
 
 ### 多任务并行与 reference 课程
 
@@ -100,10 +100,10 @@ Baseline 问题是多任务数据可能竞争 shared capacity，而不是把单�
 
 【机制相关】【推测】所需信号是 task/reference ID、各任务成功率、reset 难度和采样比例；改动接口是 task-conditioned observation、reset scheduler 与 sampling weights。面向 REGRIND 的适配假设是先在单 reference 证明闭环可行，再逐步扩展物体/轨迹，避免在算法与任务分布同时改变时声称增强有效。
 
-【需新证据】【推测】隔离评估应比较独立单任务 policy、均匀多任务训练与课程采样，固定总 samples 并报告 per-task success、最差任务和任务间遗忘。选择依据来自 [bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 的 multi-task 限制与 [demostart-2024](bibliography.md#demostart-2024) 的 curriculum 相关性，不承诺 shared policy 一定优于独立策略。
+隔离评估可以比较独立单任务 policy、均匀多任务训练与课程采样，固定总 samples 并报告 per-task success、最差任务和任务间遗忘。shared policy 与独立策略的优劣由 per-task 结果判定，[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 与 [demostart-2024](bibliography.md#demostart-2024) 分别提供 multi-task 限制与课程参照。
 
 ## 评估顺序与停止条件
 
 【机制相关】【推测】选型顺序应先确认 baseline 的观测、动作与 update 记录正确，再按瓶颈选择一个方向。成功示范足够时优先比较 imitation 初始化，几何 reference 可用但动力学偏差明显时比较 residual，探索覆盖不足时比较 reset curriculum，吞吐扩展饱和时比较 aggregation；只有在共同数据和 update 口径固定后，才把 [dppo-2024](bibliography.md#dppo-2024) 或 [04](04-onpolicy-diffusion-interface.md#概率对象) 中满足条件的模型作为 actor 候选。这是基于上述证据的条件选择，不是优劣排名。
 
-【需新证据】【推测】每次实验都应有明确的停止条件和复核节点。若原始 action/log-prob 不一致、reference reset 物理不可行、部署观测不可得或 compute budget 不支持目标控制周期，应先修复接口而不是继续叠加增强；若改善只出现在训练 reward 而非固定测试 task success，则保留负结果。该评估原则呼应 [implementation-matters-2020](bibliography.md#implementation-matters-2020) 的归因问题，具体实验以各章接口约定为准。
+每次实验都可以预先写明停止条件和复核节点。若原始 action/log-prob 不一致、reference reset 物理不可行、部署观测不可得或 compute budget 不支持目标控制周期，应先修复接口；若改善只出现在训练 reward 而非固定测试 task success，则保留负结果并记录预算消耗。该评估原则呼应 [implementation-matters-2020](bibliography.md#implementation-matters-2020) 的归因问题，具体实验以各章接口约定为准。

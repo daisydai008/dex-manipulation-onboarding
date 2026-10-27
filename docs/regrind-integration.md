@@ -6,7 +6,7 @@
 
 REGRIND 的项目背景是 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练：先把人类运动转换成机器人参考轨迹，再通过交互学习修正执行中的偏差。这一描述沿用 [03 的项目背景](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)，不是对当前源码或部署状态的审计。
 
-参考轨迹贴合人类动作，不等于机器人能稳定完成接触任务。生成式策略可以用于学习控制修正量、生成连续多步动作，也可以作为训练扰动的候选模型；以下分别说明已有论文验证了什么，以及 REGRIND 仍需进行什么试验。本章只讨论方法接口，不含硬件选型、排期与分工，那些在 REGRIND 侧文档。
+参考轨迹贴合人类动作后，还需通过接触稳定性实验验证机器人执行能力。生成式策略可以用于学习控制修正量、生成连续多步动作，也可以作为训练扰动的候选模型；以下分别说明已有论文验证了什么，以及 REGRIND 仍需进行什么试验。本章只讨论方法接口，不含硬件选型、排期与分工，那些在 REGRIND 侧文档。
 
 ## 可插入生成式 actor 的三个接口
 
@@ -14,19 +14,19 @@ REGRIND 的项目背景是 Drake 位置级 retargeting、residual RL 与 Isaac �
 
 Residual RL 用已有 controller 处理可建模的控制部分，再让 RL 学习修正量。[Residual RL](bibliography.md#residual-rl-2018) 在真机 block assembly 中验证了这种控制叠加；[MoDex](bibliography.md#modex-2026) 则提供 diffusion policy 经 DPPO fine-tuning 后 zero-shot 部署到 Allegro 的参照，但它的顺序抓取实验在本书目中未记录为 residual 控制，也不是在真机上在线训练。
 
-【推测】【需新证据】REGRIND 的适配假设是保留 reference 与 base controller，让生成式 actor 只输出 residual。试验应先记录 base-only 和 Gaussian residual 的结果，再比较生成式 residual，保持 reference、residual scale、执行限制和测试初始状态一致；同时记录任务成功率、修正幅度与饱和率，区分 reference 不可执行与 residual 控制不足。
+一种可行做法是保留 reference 与 base controller，让生成式 actor 只输出 residual。试验应先记录 base-only 和 Gaussian residual 的结果，再比较生成式 residual，保持 reference、residual scale、执行限制和测试初始状态一致；同时记录任务成功率、修正幅度与饱和率，区分 reference 不可执行与 residual 控制不足。
 
 ### 多步 action chunk 生成
 
 Action chunk 是一次预测的一段连续动作，执行其中若干步后再根据新观测预测。[DPPO](bibliography.md#dppo-2024) v3 §3、§4.3 讨论 action horizon 与 denoising-step fine-tuning，[DexUMI](bibliography.md#dexumi-2025) 则以 diffusion policy 预测多步机器人动作并进行真机灵巧手实验；前者提供更新方法，后者提供动作序列部署的参照。
 
-【推测】【需新证据】REGRIND 可以尝试生成一段 reference-conditioned residual，而不只生成当前控制步的修正量。试验应先固定单步方案，再改变预测长度与实际执行长度，记录接触恢复、任务成功率和推理延迟；若每次执行的动作段更长，还需检查策略是否仍能及时响应滑落或接触变化，不能把 action chunk 数量直接当作环境交互次数。
+一种可行做法是从单步修正扩展为一段 reference-conditioned residual。试验应先固定单步方案，再改变预测长度与实际执行长度，记录接触恢复、任务成功率和推理延迟；延长每次执行的动作段时，还需检查策略能否及时响应滑落或接触变化，并将 action chunk 中的控制步数与环境交互次数分别统计。
 
 ### 部署噪声模型标定的扰动生成
 
-部署论文提供了研究数据变化与机器人形态变化的参照，但不等于验证了生成式噪声模型。[DexVLA](bibliography.md#dexvla-2025) 研究跨形态的 diffusion action expert，[DexWild](bibliography.md#dexwild-2025) 研究人手与机器人数据联合训练及环境泛化；本书目所记录的两篇证据都不能支持“用 diffusion 生成部署扰动已经有效”的结论。
+部署论文提供了研究数据变化与机器人形态变化的参照；生成式噪声模型需要单独标定和验证。[DexVLA](bibliography.md#dexvla-2025) 研究跨形态的 diffusion action expert，[DexWild](bibliography.md#dexwild-2025) 研究人手与机器人数据联合训练及环境泛化；本书目所记录的两篇证据都不能支持“用 diffusion 生成部署扰动已经有效”的结论。
 
-【推测】【需新证据】此接口的适配假设是先用同步记录标定部署观测误差，再比较经验噪声采样与生成式扰动模型。这属于训练数据或环境侧的改动，不是替换控制 actor；试验应固定 policy、reference 和测试分布，检查扰动的时间相关性、取值范围与闭环成功率。没有实测误差数据时，不把生成样本当作真实部署噪声。
+此接口可先用同步记录标定部署观测误差，再比较经验噪声采样与生成式扰动模型。这属于训练数据或环境侧的改动，控制 actor 保持不变；试验应固定 policy、reference 和测试分布，检查扰动的时间相关性、取值范围与闭环成功率。生成样本的适用范围由实测误差数据决定。
 
 ## 接口的概率与记录约定
 
@@ -44,4 +44,4 @@ python3 scripts/check_links.py --lint
 python3 scripts/check_links.py
 ```
 
-自动检查通过不等于内容接受。条件推导、DPPO 机制与选型建议仍需人工核对；执行者交回与独立内容核验分开，不以链接可达代替技术判断。
+自动检查用于验证结构与链接，内容接受还需人工核对。条件推导、DPPO 机制与选型建议仍需人工核对；执行者交回与独立内容核验分开，不以链接可达代替技术判断。

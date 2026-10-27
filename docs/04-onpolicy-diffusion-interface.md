@@ -29,7 +29,7 @@ log qθ(ξ|c) = log p₀(z|c) − log |det D_z Fθ(z;c)|
 
 ## Entropy/KL 与优化控制
 
-【条件推导】可求值的 log-density 不等于 exact entropy 或 exact KL。对固定 `c`，若支持集条件满足且期望存在，则定义如下；第二式方向是 `old‖new`，需要 `qold` 对 `qθ` 绝对连续，否则 KL 可以无穷大。
+【条件推导】可求值的 log-density 只提供 entropy/KL 的输入；exact entropy 与 exact KL 还需对相应分布求期望。对固定 `c`，若支持集条件满足且期望存在，则定义如下；第二式方向是 `old‖new`，需要 `qold` 对 `qθ` 绝对连续，否则 KL 可以无穷大。
 
 ```text
 H(qθ|c) = E_{ξ~qθ(·|c)}[−log qθ(ξ|c)]
@@ -78,4 +78,4 @@ D_KL(qold || qθ | c) = E_{ξ~qold(·|c)}[log qold(ξ|c) − log qθ(ξ|c)]
 
 【需新证据】任务协议还应分开交互预算和计算预算。每个任务报告固定 interactions 下的结果和固定 wall-clock 下的结果，注明硬件、batch、denoising steps、action horizon、初始化/预训练来源及预算耗尽条件；action horizon 与 denoising horizon 是不同维度，参见 [dppo-2024](bibliography.md#dppo-2024) v3 §3、§4.3。更换这些条件后，不能将差异单独归因于 density 计算方式。
 
-【需新证据】仿真验证与真机在线 fine-tuning 必须分开规划。[dppo-2024](bibliography.md#dppo-2024) v3 §5.4 的 One-leg hardware evaluation 是 zero-shot 部署而非 real-data fine-tuning/co-training；本章任务设计也不提供真机在线学习证据。真机前需另行核对部署观测、latency、执行限制与硬件安全流程，概率接口正确并不等于安全认证。
+【需新证据】仿真验证与真机在线 fine-tuning 必须分开规划。[dppo-2024](bibliography.md#dppo-2024) v3 §5.4 的 One-leg hardware evaluation 是 zero-shot 部署而非 real-data fine-tuning/co-training；本章任务设计也不提供真机在线学习证据。真机前需另行核对部署观测、latency、执行限制与硬件安全流程，概率接口正确后还需通过独立的安全检查。
