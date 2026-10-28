@@ -48,6 +48,19 @@ DPPO v3 Appendix D Table A3 的时间指一次 training iteration 的耗时，�
 
 Exact-inversion 也从同一个 PPO 问题出发：rollout 中已经保存了采样变量 `ξ`，现在需要计算 `log qθ(ξ|c)`。它直接对最终采样变量求密度，求值对象与 DPPO 的逐步去噪转移不同。
 
+### 符号与 DPPO 的对应关系
+
+先把两套记号对齐。以下 `t` 始终表示环境决策时刻，`k` 表示去噪迭代，二者不是同一时间轴。
+
+- **`ξ`**：exact-inversion 最终采样的辅助动作，对应 DPPO 去噪链末端的干净动作段 `A_t^0`，不是中间状态 `A_t^k`（`k>0`）。
+- **`z`**：生成前的 latent。只有在 `Fθ` 表示同一个确定性 sampler、且 `z` 被明确定义为该 sampler 的初始噪声时，才可把它对应为 DPPO 的 `A_t^K`；它与网络逐步预测的噪声 `ε_θ` 不是同一个量。
+- **`Fθ`**：从 `z` 到 `ξ` 的完整可逆生成映射，不是单个 denoising network。DPPO 则把 `A_t^K → … → A_t^0` 拆成一串 transition，分别求 likelihood。
+- **`c`**：本次决策的 conditioning，可包含观测、reference/phase、history 与 normalization。它对应 DPPO 中由 `s_t` 及观测历史形成的环境条件，不是去噪步 `k`。
+- **`p₀(z|c)`**：已知的基础分布密度，例如标准高斯；`qθ(ξ|c)` 则是最终采样变量的密度。只有在 `ξ=A_t^0` 且 `c` 表示同一环境条件时，它才对应 DPPO 中最终动作的边缘密度 `πθ(A_t^0|s_t)`；一般 auxiliary action 的 `qθ` 不直接等同于这个边缘密度。
+- **`D_z Fθ`**：映射对 `z` 的 Jacobian，determinant 用于修正体积变化。
+- **`π̄_θ(A_t^k | s_t, A_t^{k+1})`**：DPPO 的逐步 transition likelihood，与 `qθ(ξ|c)` 是不同概率对象。
+- **`ρ`**：本文 exact-inversion 的 PPO ratio，作用与 DPPO 的 `r̄_t^k` 类似，但随机变量不同，不能把二者写成同一个比值。
+
 ### 从生成结果找回 latent
 
 设基础变量 `z` 来自已知分布，例如标准高斯，生成过程为 `ξ=Fθ(z;c)`。若 `Fθ` 在支持集上是 C¹ diffeomorphism（正逆映射连续可微、Jacobian 非奇异），且逆映射与 log-determinant 可计算，给定 `ξ` 就能求出 `z=Fθ⁻¹(ξ;c)`。这里的“逆”是从生成结果找回唯一的 latent，与机器人动作的时间顺序和噪声预测网络的反向运行是两个不同概念。
@@ -63,7 +76,7 @@ log qθ(ξ|c) = log p₀(z|c) − log |det D_z Fθ(z;c)|
 
 ### 在 PPO 中怎样使用
 
-对 rollout 中保存的同一个 `ξ`，旧策略与新策略分别执行自己的逆变换：`z_old=F_old⁻¹(ξ)`、`z_new=F_new⁻¹(ξ)`，再计算 `log q_old(ξ|c)` 与 `log q_new(ξ|c)`。两者取差得到 log-ratio，再通过 `r=exp(log q_new(ξ|c)−log q_old(ξ|c))` 得到 PPO ratio。两次逆变换得到的 latent 可以不同；必须保持一致的是采样变量 `ξ` 与 conditioning `c`。
+对 rollout 中保存的同一个 `ξ`，旧策略与新策略分别执行自己的逆变换：`z_old=F_old⁻¹(ξ)`、`z_new=F_new⁻¹(ξ)`，再计算 `log q_old(ξ|c)` 与 `log q_new(ξ|c)`。两者取差得到 log-ratio，再通过 `ρ=exp(log q_new(ξ|c)−log q_old(ξ|c))` 得到 PPO ratio。两次逆变换得到的 latent 可以不同；必须保持一致的是采样变量 `ξ` 与 conditioning `c`。
 
 这个密度还可以用于估计 entropy 与 KL，但估计方式仍取决于样本来源和数值稳定性。可求值的 log-density 只提供输入，具体估计仍需按 [概率基础附录的 Entropy/KL 与优化控制](appendix-probability.md#entropykl-与优化控制) 检查。
 
