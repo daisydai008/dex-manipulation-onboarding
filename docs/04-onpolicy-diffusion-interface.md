@@ -1,18 +1,31 @@
 # 04 On-policy diffusion 的执行与任务接口
 
-> 本章面向实现：如何固定执行 mapping、记录任务配置，以及按检查目的选择任务。概率定义与推导见 [附录](appendix-probability.md)。
+> 本章回答两个实现问题：policy 输出的采样变量怎样变成机器人 command，以及用哪些任务检查这个接口是否正确。概率定义与推导见 [附录](appendix-probability.md)。
 
 On-policy diffusion 的实现除了 actor 本身，还需要固定执行命令的生成方式和任务评估条件。下面先说明执行 mapping，再给出三个任务的配置与比较设置。
 
 ## 固定执行 mapping
 
-固定且与待更新 policy 参数无关的执行 mapping 可以并入环境动力学。令 `s` 为包含 controller 状态的完整环境状态，`c=h(s)` 为本次决策的 conditioning；若 `u=g(s,ξ)` 在数据收集与相关更新期间固定，则可定义 `P̃(s'|s,ξ)=P(s'|s,g(s,ξ))`、`R̃(s,ξ)=R(s,g(s,ξ))`。这个构造允许不可逆的 `g`，policy 在辅助动作环境中按 `qθ(ξ|c)` 采样，并对同一个 `ξ` 计算 ratio；PPO 仍使用其原有的近似目标。
+Policy 输出的 `ξ` 还不是机器人最终执行的 command。中间还有一层执行 mapping：它根据当前状态 `s` 和采样变量 `ξ`，计算下发给机器人的 `u`。可以把这层规则理解为“策略输出到执行器之间的转换”。
 
-固定的 base controller、residual scale 与 clipping 可以组成这样的 mapping。例如 `u=clip(b(s)+αξ)` 中，只要 `b`、`α`、clipping 规则和相关 controller 状态转移独立于待更新参数，并保留原始 `ξ`，就可以在辅助动作空间进行 PPO 更新。此时 `qθ` 仍表示辅助密度，执行动作密度需按 composition 另外确定。[residual-rl-2018](bibliography.md#residual-rl-2018) 提供 control-signal superposition 的工程参照；这里的概率关系来自上述固定 mapping 条件。
+```text
+状态 s
+  → 组成本次决策的 conditioning c=h(s)
+  → policy 按 qθ(ξ|c) 采样 ξ
+  → 执行 mapping 计算 u=g(s,ξ)
+  → 机器人执行 u
+  → 环境进入下一状态 s′
+```
 
-带内部状态的 controller 或 filter 需要连同状态转移一起描述。若 `m_t` 影响执行 command，就应定义 `(s_t,m_t)` 的转移与 reset；policy 使用该状态时，还需将其保存到 conditioning 中或提供重建信息。这样才能完整描述当前动作对后续状态的影响。
+以 residual control 为例，转换规则可以写成 `u=clip(b(s)+αξ)`。其中 `b(s)` 是 base controller 的输出，`α` 是 residual scale，`ξ` 是 policy 学出的修正量，clipping 限制最终 command 的幅度。PPO 关心的是 `ξ` 在新旧策略下的概率，因此只要 `g` 及相关 controller 状态转移在数据收集与相关更新期间不依赖待更新参数 `θ`，就可以把 `g` 当作环境的一部分，在 auxiliary action 空间中做 PPO。`qθ(ξ|c)` 是辅助动作的密度，执行动作 `u` 的密度则需要由 `g` 与 `qθ` 的 composition 另行确定；PPO 仍使用其原有的近似目标，这一构造不提供额外保证。
 
-执行规则改变后，需要重新确认 rollout 的有效性。更新 reference、base controller、normalization、safety filter 或内部状态规则，都可能改变环境或 conditioning；old log-prob 记录解决的是策略概率比较，执行条件还需单独检查。Controller 与 actor 共同学习需要另行建立相应推导。对 REGRIND 的 reference-conditioned residual，可以先按 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟) 验证可执行性，再检查概率记录与数据收集时的约定是否一致。
+这也是为什么必须保存原始 `ξ`。执行后的 `u` 可能经过缩放和 clipping，多个不同的 `ξ` 可能得到同一个 `u`，所以仅保存 `u` 不足以确定 `ξ`。正确做法是分别保存：用于概率计算的原始 `ξ` 与 old log-prob，以及用于执行核对的 `u`。
+
+执行规则一旦改变，环境也可能随之改变。更换 base controller、reference、residual scale、normalization 或 clipping 规则后，`u`、conditioning `c` 或环境转移都可能变化。当实际环境或 conditioning 定义发生变化时，旧 rollout 需要按新定义重新采集，old log-prob 只用于比较策略概率。
+
+如果 controller 或 filter 还有内部状态 `m_t`，它也应作为环境状态的一部分：记录 `(s_t,m_t)` 的转移和 reset；policy 若使用该状态，还要把它放进 conditioning 或保存重建信息。这样才能说明当前动作如何影响后续状态。
+
+对 REGRIND，实施顺序是：先固定 base/reference、residual scale 和 clipping 规则，再保存原始 `ξ` 与执行 command，最后比较不同 actor。每次修改这些规则后重新建立 baseline；controller 与 actor 共同学习则需要另行建立推导。
 
 ## 按检查目的选择任务
 
