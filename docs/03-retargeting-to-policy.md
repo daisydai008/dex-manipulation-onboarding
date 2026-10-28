@@ -52,4 +52,4 @@ Residual policy 在 base controller 输出上学习修正量，以补偿模型�
 
 VR 与 haptic feedback 是采集交互的不同组成部分。[openteach-2024](bibliography.md#openteach-2024) 报告基于 VR 的跨机器人 teleoperation 与 policy learning，[bunny-visionpro-2024](bibliography.md#bunny-visionpro-2024) 报告双手 collision/singularity avoidance、haptic feedback 与 long-horizon imitation。比较采集方案时，可以单独测量 haptic 对下游 policy 的贡献，并明确端到端 action latency 的起止时间与测量方式。
 
-数据管线的比较应同时覆盖数据质量和操作者成本。可以记录成功动作与接触片段的覆盖、接触失配、观测同步误差及操作者负担，并为 BC、tracking 和 reset 分别制定样本筛选规则。展示视频作为这些指标的补充，算法候选与对照实验顺序见 [05](05-ppo-enhancement.md)。
+数据管线的比较应同时覆盖数据质量和操作者成本。可以记录成功动作与接触片段的覆盖、接触失配、观测同步误差及操作者负担，并为 BC、tracking 和 reset 分别制定样本筛选规则。展示视频作为这些指标的补充，算法候选与对照实验顺序见 [05](05-ppo-diagnostics.md)。

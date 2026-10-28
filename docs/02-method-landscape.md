@@ -20,11 +20,11 @@
 
 失败现象决定先检查哪个接口，actor 参数化留到接口一致后比较。更新、接触、动作表示与计算效率各自对应不同的记录和排查顺序。
 
-更新后 KL 或 clip fraction 突变时，先核对同一 action 的 old/new log-prob、advantage、normalization 和 done/truncation 处理，再分别调整 LR、epoch 或 clip。[implementation-matters-2020](bibliography.md#implementation-matters-2020) 说明了实现差异对结果归因的重要性；这里的检查顺序是据此提出的排查方案，具体项目见 [05 selector](05-ppo-enhancement.md#从失败信号选择接口)。
+更新后 KL 或 clip fraction 突变时，先核对同一 action 的 old/new log-prob、advantage、normalization 和 done/truncation 处理，再分别调整 LR、epoch 或 clip。[implementation-matters-2020](bibliography.md#implementation-matters-2020) 说明了实现差异对结果归因的重要性；这里的检查顺序是据此提出的排查方案，具体项目见 [05 selector](05-ppo-diagnostics.md#从失败信号选择接口)。
 
 轨迹几何贴合而物体仍滑落时，重点转向接触与控制。按 phase 记录 reference error、object motion、接触失败、base-only 成功率和 residual 饱和情况，核对 reference、base controller 与 reset 的可执行性。早期失败使后续 phase 很少得到采样时，可以单独比较 phase resets 或 curriculum，并始终从固定部署初始状态报告 end-to-end success，详见 [03](03-retargeting-to-policy.md#接触可行性与动力学鸿沟)。
 
-动作表示是否合适，需要在数据与更新口径一致后判断。可以检查同一条件下的成功动作是否具有多种模式，以及这些模式与 Gaussian baseline 的失败、imitation 的恢复表现有何关联，再用对照实验评估 diffusion 的作用。计算效率则通过 simulator、actor 和 update 的分段耗时判断，实验拆分见 [05](05-ppo-enhancement.md)。
+动作表示是否合适，需要在数据与更新口径一致后判断。可以检查同一条件下的成功动作是否具有多种模式，以及这些模式与 Gaussian baseline 的失败、imitation 的恢复表现有何关联，再用对照实验评估 diffusion 的作用。计算效率则通过 simulator、actor 和 update 的分段耗时判断，实验拆分见 [05](05-ppo-diagnostics.md)。
 
 ## 候选选择：五个方法族
 
@@ -64,7 +64,7 @@ Offline 方法从静态数据学习，on-policy fine-tuning 需要可交互环�
 
 起步顺序由现有资源决定：simulator、成功 demonstrations 与 reference/base controller 分别对应三种起点。
 
-已有 simulator、示范数据尚待准备时，可以先建立 Gaussian PPO baseline。固定 reward、reset、observation 和 action semantics，输出学习曲线、成功率、掉落率、KL/clip fraction 与分段耗时；记录一致后，再根据具体失败现象选择后续方法。这一顺序以 [ppo-2017](bibliography.md#ppo-2017) 为起点，实施检查见 [05](05-ppo-enhancement.md#固定-ppo-更新与估计口径)。
+已有 simulator、示范数据尚待准备时，可以先建立 Gaussian PPO baseline。固定 reward、reset、observation 和 action semantics，输出学习曲线、成功率、掉落率、KL/clip fraction 与分段耗时；记录一致后，再根据具体失败现象选择后续方法。这一顺序以 [ppo-2017](bibliography.md#ppo-2017) 为起点，实施检查见 [05](05-ppo-diagnostics.md#固定-ppo-更新与估计口径)。
 
 已有成功 robot demonstrations 时，可以先验证 imitation 闭环，再决定是否进行 reward fine-tuning。统一数据与部署动作后，在固定 reset 下测 success 和偏离示范后的恢复；达到任务判据的 imitation 策略可以直接作为交付方案。有进一步优化需求时，再结合 [dppo-2024](bibliography.md#dppo-2024) 的实验设置设计 fine-tuning 对照。
 
@@ -74,7 +74,7 @@ Offline 方法从静态数据学习，on-policy fine-tuning 需要可交互环�
 
 五个方法族采用同一套对照原则：每次对照只改动一个接口、检验一个变量，其余条件保持一致。若必须同时改动多个接口，就把整个方案作为组合实验，结果只归因于这一组合，不能据此判断其中某个接口的独立作用。实验结果分别按固定环境交互次数和固定实际运行时长两种预算口径报告，每种口径都列出各个随机种子的结果，并记录失败类型和实际消耗。
 
-首个实验开始前，还要写明观察到的失败现象、准备检验的解释、各组共用的环境配置、部署时延上限和预先确定的成功标准。任务用途与记录要求见 [04](04-onpolicy-diffusion-interface.md#按检查目的选择任务) 和 [05](05-ppo-enhancement.md#评估顺序与停止条件)。
+首个实验开始前，还要写明观察到的失败现象、准备检验的解释、各组共用的环境配置、部署时延上限和预先确定的成功标准。任务用途与记录要求见 [04](04-onpolicy-diffusion-interface.md#按检查目的选择任务) 和 [05](05-ppo-diagnostics.md#评估顺序与停止条件)。
 
 各方法族的特定比较项如下：
 

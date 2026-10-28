@@ -38,4 +38,4 @@ D_KL(qold || qθ | c) = E_{ξ~qold(·|c)}[log qold(ξ|c) − log qθ(ξ|c)]
 
 旧 rollout 上的 log-prob difference 可以估计 `old‖new` KL，此时 conditioning 取自旧 rollout 的经验分布。有限样本误差可能使这个经验 KL 为负，解释结果时需结合样本数与相关性。这里的 entropy/KL 都位于辅助动作空间；执行动作的分布、接触探索和任务性能需要各自的测量。
 
-KL-adaptive LR 可以作为优化控制的候选实验。预先定义辅助空间 `old‖new` KL 的目标区间、估计方法、调节幅度和时序：估计偏高时降低后续 update 的 LR，持续偏低时尝试提高，并与固定 LR 做单因素对照。开始对照前先核对 log-prob、advantage 和 normalization，再分别测试 LR、epoch 与 clip，检查顺序见 [05](05-ppo-enhancement.md#从失败信号选择接口)。
+KL-adaptive LR 可以作为优化控制的候选实验。预先定义辅助空间 `old‖new` KL 的目标区间、估计方法、调节幅度和时序：估计偏高时降低后续 update 的 LR，持续偏低时尝试提高，并与固定 LR 做单因素对照。开始对照前先核对 log-prob、advantage 和 normalization，再分别测试 LR、epoch 与 clip，检查顺序见 [05](05-ppo-diagnostics.md#从失败信号选择接口)。
