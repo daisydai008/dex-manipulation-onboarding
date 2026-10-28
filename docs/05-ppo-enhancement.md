@@ -22,6 +22,15 @@ PPO 的增强需要按改动接口分别评估。[ppo-2017](bibliography.md#ppo-
 
 同名 PPO 实现的 normalization、optimizer 和 rollout 处理可能不同，比较前需要固定这些细节。[implementation-matters-2020](bibliography.md#implementation-matters-2020) 报告 code-level optimization 解释了其研究中 PPO 相对 TRPO 的多数回报提升；[on-policy-actor-critic-2020](bibliography.md#on-policy-actor-critic-2020) 评估 50+ choices，为系统比较实现选项提供参照。
 
+比较的核心量是同一个 action 在新旧策略下的 ratio，以及由 reward 与 value 估计得到的 advantage：
+
+```text
+ρ_t(θ) = exp( log πθ(a_t|s_t) − log π_old(a_t|s_t) )
+surrogate = min( ρ_t·A_t, clip(ρ_t, 1−ε, 1+ε)·A_t )
+```
+
+这里的 `A_t` 不是额外超参数，而是由 rollout 的 reward、value 和 done/truncation 共同决定。以 GAE 为例，先算 `δ_t = R_t + γV(s_{t+1}) − V(s_t)`，再按 `Â_t = δ_t + γλÂ_{t+1}` 递推，等价于 `Â_t = Σ_{l≥0}(γλ)^l·δ_{t+l}`；done/truncation 的处理会直接改变这个估计。
+
 可以先审查 estimator、surrogate loss 和 optimizer，再调整 retargeting objective。保存 reward、done/truncation、value estimate、old log-prob、advantage 与 normalization statistics，依次核对 time-limit bootstrapping、advantage normalization、value scale、minibatch/epoch、gradient clipping 和 KL/clip fraction 记录。这些是面向 REGRIND 提出的检查项，具体 hyperparameter 由目标任务实验选择。
 
 对照实验可以保持 actor、reward、reference、reset 和 environment steps 一致，每次只改变一个实现因素。按多个固定 seed 报告 task success、reference error、掉落率、KL/clip fraction、value error 与 wall-clock，先确认固定动作接口下的训练行为，再测试其他增强。该方案沿用 [ppo-2017](bibliography.md#ppo-2017) 的更新框架，并结合上述 implementation study 的归因思路。
@@ -42,11 +51,15 @@ Demonstrations 可以为 sparse-success 或高维接触任务提供成功行为�
 
 可以比较 BC initialization 和持续的辅助 imitation loss。数据应包含 observation/action 一致的 robot demonstrations；采用 retargeted trajectory 时，还需完成动力学校验、动作语义对齐与成功片段筛选，具体要求见 [03](03-retargeting-to-policy.md#用途一bc-数据)。这一步将可执行记录转成监督数据，再用于 REGRIND 的候选训练方案。
 
+持续辅助损失可以写成 `L = L_PPO + β·L_BC`：只初始化对应先在 demonstrations 上训练、随后令 `β=0`，持续辅助对应在 RL 更新中保留非零 `β`。比较时先固定 demonstrations 的数量和质量，再改变初始化方式或 `β`，避免同时改变数据来源。
+
 实验可以设置无示范、只初始化、持续辅助损失三组。固定两组示范方案使用的数据数量与质量，并为各组设置相同 interaction budget，记录初始成功率、后续提升、偏离 reference 后的恢复能力和 demo-overfitting。[dapg-2018](bibliography.md#dapg-2018) 提供 demonstration 的方法依据，PPO 适配的作用通过三组结果判断。
 
 ### Base controller 与 residual
 
 Residual learning 利用 base controller 执行已有控制规律，再学习接触与摩擦误差下的修正量。[residual-rl-2018](bibliography.md#residual-rl-2018) 在真机 block assembly 中验证 conventional control 与 RL signal superposition，为位置级 reference 的反馈修正提供参照。
+
+执行合成可以写成 `u = clip(b(s) + αξ)`：`b(s)` 是 base command，`ξ` 是 policy 输出的 residual，`α` 决定 residual scale。记录时同时保存 `ξ`、`b(s)`、合成前的 `v=b(s)+αξ`、执行后的 `u` 和 clipping 规则。饱和率按 `v` 是否超过执行限制统计，多维动作可分别报告逐维比例与任一维触发比例；`u` 与 `v` 的差异用于确认 clipping 是否发生。
 
 对 REGRIND，可以冻结 base mapping 与 residual scale 后训练 residual。保存 base command、policy 原始动作、合成与限制后的执行 command、tracking error、object state 和接触反馈，用于检查 action composition 与 reward attribution。Auxiliary actor 的 ratio 在原始 policy action 上计算，clipped actuator command 用于核对执行，概率条件见 [04](04-onpolicy-diffusion-interface.md#固定执行-mapping)。
 
@@ -56,6 +69,8 @@ Residual learning 利用 base controller 执行已有控制规律，再学习接
 
 Tracking 目标和 reset 课程分别影响策略追踪什么、从哪些状态开始学习。[deepmimic-2018](bibliography.md#deepmimic-2018) 报告 motion imitation 与 task objective 的组合，[demostart-2024](bibliography.md#demostart-2024) 报告 sparse reward、少量 simulation demonstrations 与 auto-curriculum。它们为长 reference 的目标权衡和后续 phase 覆盖提供不同参照，具体 RSI/reset 算法仍需结合正文核查。
 
+目标权重可以写成 `R = w_imit·R_imit + w_task·R_task`：`R_imit` 衡量与 reference 的贴合，`R_task` 衡量任务完成。消融时固定其余条件，分别改变 `w_imit`、`w_task` 或 reset distribution，才能区分贴合提升是否伴随任务完成改善。
+
 可以分别设计 reference observation、tracking reward 和 reset sampler。准备 phase-aligned reference、可恢复的 joint/object state 与成功信号后，先评估 imitation 目标和任务完成的关系；若早期失败使后续 phase 很少得到采样，再尝试从 reference 不同阶段初始化。REGRIND 的 contact-consistent reset 规则需另行定义，DeepMimic 的 RSI 原则见 [03](03-retargeting-to-policy.md#用途二tracking-reference-与-rsi)。
 
 实验应固定 actor，分别改变 tracking reward 和 reset distribution，再测试二者的组合。单独消融用于识别各接口的作用，组合结果按完整方案报告。指标包括固定部署初始状态上的 end-to-end success、各 phase 的条件成功率、reset 可行率和 reference error；[demostart-2024](bibliography.md#demostart-2024) 的课程结果为实验设计提供参照。
@@ -63,6 +78,8 @@ Tracking 目标和 reset 课程分别影响策略追踪什么、从哪些状态�
 ### Split-and-aggregate 数据聚合
 
 SAPG 研究并行数据增加后 PPO 性能趋于饱和的问题。[sapg-2024](bibliography.md#sapg-2024) 提出将环境拆成 chunks，再通过 importance sampling 聚合数据。本节将其放在集成层，是因为它改变了多来源 rollout 的组织方式，其主要作用位置是采样与更新。
+
+对来自 behavior policy `μ` 的样本，importance weight 写成 `w_i = πθ(a_i|s_i) / μ(a_i|s_i)`；有效样本量可以用 `ESS = (Σ_i w_i)² / Σ_i w_i²` 估计。`w_i` 的分布和 ESS 用来判断聚合是否把不同采样来源混成了有效更新，而不是只增加了样本数量。
 
 可以先在同一任务、同一 residual actor 下比较聚合方式。记录各 behavior policy 的 likelihood、trajectory 来源和对应 advantage，再实现 rollout partition、behavior-policy bookkeeping 与 importance weighting。不同 reference phase 的混合或 auxiliary-action actor 的集成，作为后续独立假设在小规模实验中验证。
 
@@ -82,6 +99,8 @@ Multi-agent 方法适用于已定义多个 cooperative agents 及各自 observat
 
 增加环境数量会同时影响吞吐、每次更新的时序长度和梯度数据分布。[massively-parallel-2021](bibliography.md#massively-parallel-2021) 在 ANYmal 上研究大规模并行与 curriculum，并验证真机迁移。手部接触仿真与 diffusion actor 的计算组成需要按各自配置重新测量。
 
+每次 update 的样本量可写成 `N_samples = N_envs × T_rollout`：增大 `N_envs` 会提高并行采样量，但 `T_rollout` 同时决定 advantage 与 minibatch 的时序结构。比较并行规模时分别进行固定 `N_samples` 的规模对照和固定 wall-clock 的效率对照，另一项作为测量结果，从而区分采样吞吐与更新开销。
+
 可以先分段计时，再调整 environment batching、rollout collection 和 minibatch schedule。记录 environment steps/s、simulation/actor/update 耗时、rollout length 与显存，确定主要成本来自接触仿真、actor inference 还是优化器。并行数的选择应结合训练表现与这些成本，GPU utilization 作为辅助记录。
 
 实验可以同时设置固定 total samples 的规模对照和固定 wall-clock 的效率对照。保持 reference/reset、task distribution 与 actor 一致，记录 task success、吞吐和时序 credit assignment 的变化。[massively-parallel-2021](bibliography.md#massively-parallel-2021) 为并行与课程提供参照，二者的收益通过独立对照分别报告。
@@ -97,6 +116,8 @@ Domain randomization 用训练分布变化应对部署差异，视觉与动力�
 ### 多任务并行与 reference 课程
 
 多任务训练需要显式分配任务数据，并检查 shared capacity 的竞争。[bi-dexhands-2023](bibliography.md#bi-dexhands-2023) 报告多数 multi-task/few-shot 设置失败；[demostart-2024](bibliography.md#demostart-2024) 提供课程学习的参照。增加并行环境可以提高数据吞吐，多技能学习还需单独评估每项任务。
+
+独立单任务 policy 与最终 shared policy 的差值可以记为 `G_i = S_i^single − S_i^multi`，它表示 negative transfer；采样比例和优化干扰也会影响这个差值。若要报告遗忘，需要记录同一 shared policy 在多个训练时点的 per-task success，并用 `S_i(t_before) − S_i(t_after)` 衡量学习后续任务后的性能下降。
 
 可以从单 reference 的闭环开始，逐步扩展物体和轨迹。记录 task/reference ID、各任务成功率、reset 难度与采样比例，再调整 task-conditioned observation、reset scheduler 和 sampling weights。算法与任务分布分别改变，有助于区分表示、采样和课程各自的影响。
 
