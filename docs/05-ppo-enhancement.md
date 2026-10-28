@@ -1,8 +1,18 @@
 # 05 面向 retargeting 的 PPO 增强
 
-> 本章讨论怎样根据失败现象选择 PPO 的改动位置，并通过对照实验区分方法收益与实现差异。内容覆盖 update/estimation、demonstration/residual 集成、并行训练与课程，适用于各条研究路线的后续优化。
+> 本章的主线是“失败现象 → 改动接口 → 隔离实验”。先判断训练在哪个环节失效，再选择对应机制的论文作为参照，最后只改变一个变量来验证收益。
+
+PPO 增强在这里按实验接口组织，而不是按算法名称罗列：先记录失败现象，再决定改 update/estimation、demonstration/residual 集成，还是并行训练与课程。每个方向都给出问题、论文依据、候选改动和隔离指标，便于把方法转成可执行的对照实验。
 
 PPO 的增强需要按改动接口分别评估。[ppo-2017](bibliography.md#ppo-2017) 介绍多 epoch surrogate update，[implementation-matters-2020](bibliography.md#implementation-matters-2020) 研究 code-level optimization 的影响，[on-policy-actor-critic-2020](bibliography.md#on-policy-actor-critic-2020) 系统评估设计选择。这些工作为固定实现、逐项比较提供依据。
+
+```text
+失败现象
+  → 定位 update / reference / reset / observation / throughput 中的具体接口
+  → 选择相关机制
+  → 固定其余条件做对照
+  → 用指标决定继续、修复或停止
+```
 
 对 REGRIND，可以从 Drake 位置级 retargeting、residual RL 与 Isaac 并行训练的接口出发设计实验。下文将论文结果和适配建议分开说明：先介绍方法解决的问题，再给出候选改动、所需记录和比较指标。项目中的具体实现与收益还需通过源码核查和实验确定。
 
